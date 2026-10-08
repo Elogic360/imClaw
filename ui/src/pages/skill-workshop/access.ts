@@ -1,0 +1,27 @@
+import type { ApplicationGatewaySnapshot } from "../../app/context.ts";
+import { canCallGatewayMethod } from "../../lib/gateway-methods.ts";
+
+export type SkillWorkshopAccess = ReturnType<typeof resolveWorkshopAccess>;
+
+export type SkillWorkshopAdminMethod =
+  | "config.patch"
+  | "skills.proposals.apply"
+  | "skills.proposals.evaluate"
+  | "skills.proposals.reject"
+  | "skills.proposals.requestRevision";
+
+export function canCallWorkshopAdminMethod(
+  snapshot: ApplicationGatewaySnapshot | null | undefined,
+  method: SkillWorkshopAdminMethod,
+): boolean {
+  return canCallGatewayMethod(snapshot, method, "operator.admin");
+}
+
+export function resolveWorkshopAccess(snapshot: ApplicationGatewaySnapshot) {
+  return {
+    canEvaluate: canCallWorkshopAdminMethod(snapshot, "skills.proposals.evaluate"),
+    canApply: canCallWorkshopAdminMethod(snapshot, "skills.proposals.apply"),
+    canRevise: canCallWorkshopAdminMethod(snapshot, "skills.proposals.requestRevision"),
+    canReject: canCallWorkshopAdminMethod(snapshot, "skills.proposals.reject"),
+  };
+}
