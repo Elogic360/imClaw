@@ -773,13 +773,14 @@ describe("imClaw Autonomous Organization & Multi-Agent Department Simulation", (
 
     const mkt = registry.getDepartment("marketing");
     expect(mkt).toBeDefined();
-    expect(mkt?.leadId).toBe("mkt-lead");
+    expect(mkt?.leadId).toBe("mlead");
 
     const mktAgents = registry.getDepartmentAgents("marketing");
     expect(mktAgents.length).toBeGreaterThanOrEqual(4);
 
     const fin = registry.getDepartment("finance");
     expect(fin?.requiresApprovalForActions).toBe(true);
+    expect(fin?.leadId).toBe("alead");
 
     const trading = registry.getDepartment("trading");
     expect(trading?.leadId).toBe("chief-trading-shihan");
@@ -793,7 +794,7 @@ describe("imClaw Autonomous Organization & Multi-Agent Department Simulation", (
       "Team: Create a brand campaign and social media announcements for Integral Market",
     );
     expect(r1.departmentId).toBe("marketing");
-    expect(r1.targetLead.id).toBe("mkt-lead");
+    expect(r1.targetLead.id).toBe("mlead");
     expect(r1.requiresTeam).toBe(true);
 
     const r2 = router.routeRequest("Analyze BTC liquidity sweeps and fair value gaps");
@@ -802,7 +803,7 @@ describe("imClaw Autonomous Organization & Multi-Agent Department Simulation", (
 
     const r3 = router.routeRequest("Reconcile monthly ledger balances and cashflow statements");
     expect(r3.departmentId).toBe("finance");
-    expect(r3.targetLead.id).toBe("flead");
+    expect(r3.targetLead.id).toBe("alead");
   });
 
   it("executes an autonomous multi-agent team task with concurrent specialist execution and lead synthesis", async () => {
@@ -816,7 +817,7 @@ describe("imClaw Autonomous Organization & Multi-Agent Department Simulation", (
     );
 
     expect(plan.status).toBe("COMPLETED");
-    expect(plan.leadId).toBe("mkt-lead");
+    expect(plan.leadId).toBe("mlead");
     expect(plan.subTasks.length).toBeGreaterThanOrEqual(2);
     expect(plan.subTasks.every((t) => t.status === "COMPLETED")).toBe(true);
     expect(plan.notes.length).toBeGreaterThanOrEqual(2);
