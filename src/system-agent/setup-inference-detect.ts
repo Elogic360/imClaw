@@ -217,12 +217,27 @@ async function prepareSetupInferenceOptions(deps: DetectSetupInferenceDeps, agen
     workspaceDir: workspace,
     metadataSnapshot: pluginMetadataSnapshot,
   });
+  const manualProviders = listSetupInferenceManualProviders(authChoices);
+  if (
+    !manualProviders.some(
+      (p) => p.id === "google-antigravity" || p.brandId === "google-antigravity",
+    )
+  ) {
+    manualProviders.push({
+      id: "google-antigravity",
+      brandId: "google-antigravity",
+      label: "Google Antigravity",
+      hint: "Use local Antigravity CLI or OAuth session",
+      groupLabel: "Google Antigravity",
+    });
+  }
+
   const manual = {
     ...(utilityModel ? { utilityModel } : {}),
     ...(utilityModel && setupSelection?.modelTarget === "utility"
       ? { setupModel: utilityModel }
       : {}),
-    manualProviders: listSetupInferenceManualProviders(authChoices),
+    manualProviders,
     authOptions,
     prepareOptions: listSetupInferencePrepareOptions(authChoices),
     nativeSessionCatalogs,

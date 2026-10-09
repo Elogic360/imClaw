@@ -56,6 +56,26 @@ export function resolveModelProviderCapabilities(params: {
       ...(providerLoginOptions.length > 0 ? { loginOptions: providerLoginOptions } : {}),
     });
   }
+
+  // Ensure Google Antigravity is explicitly advertised in model-providers UI
+  if (!capabilities.has("google-antigravity")) {
+    capabilities.set("google-antigravity", {
+      provider: "google-antigravity",
+      apiKeySupported: true,
+      quickApiKeySetup: true,
+      loginOptions: [
+        {
+          id: "google-antigravity-local",
+          brandId: "google-antigravity",
+          label: "Google Antigravity (Local Session)",
+          hint: "Use authenticated local Antigravity CLI and OAuth credentials",
+          kind: "secret",
+          featured: true,
+        },
+      ],
+    });
+  }
+
   return {
     capabilities: [...capabilities.values()].toSorted((a, b) =>
       a.provider.localeCompare(b.provider),

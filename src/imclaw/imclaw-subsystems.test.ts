@@ -14,7 +14,7 @@
  * - Model Routing & Cost Optimization
  */
 
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import {
   AgentRegistry,
   ApprovalEngine,
@@ -853,5 +853,257 @@ describe("imClaw Autonomous Organization & Multi-Agent Department Simulation", (
     expect(result.finalDeliverable).toContain("[Marketing Lead Synthesis]");
     expect(result.requiresApproval).toBe(true);
     expect(result.approvalStatus).toBe("PENDING_CONFIRMATION");
+  });
+
+  it("Autonomous Scheduler registers, executes, and pauses scheduled jobs", async () => {
+    const { AutonomousScheduler } = await import("./platform/scheduling/scheduler-engine.js");
+    const scheduler = new AutonomousScheduler();
+
+    const job = scheduler.registerJob({
+      name: "EURUSD Zone Watcher",
+      triggerType: "INTERVAL",
+      intervalMs: 10000,
+      targetAgentId: "market-sensei",
+      taskPayload: { symbol: "EURUSD", zone: "1.0850" },
+      enabled: true,
+    });
+
+    expect(job.status).toBe("ACTIVE");
+    expect(scheduler.listJobs().length).toBe(1);
+
+    const executed = await scheduler.executeJob(job.id);
+    expect(executed).toBe(true);
+    expect(scheduler.getJob(job.id)?.executionCount).toBe(1);
+
+    scheduler.pauseJob(job.id);
+    expect(scheduler.getJob(job.id)?.status).toBe("PAUSED");
+    scheduler.stopAll();
+  });
+
+  it("Context Engine compiles prioritized context within token limits", async () => {
+    const { ContextEngine } = await import("./platform/context/context-engine.js");
+    const engine = new ContextEngine({ maxTokens: 100, reservedTokens: 20 });
+
+    engine.addItem({
+      id: "item-1",
+      source: "MARKET_STATE",
+      priority: 1, // high priority
+      content: "EURUSD in Bullish Order Block at 1.0850",
+    });
+
+    engine.addItem({
+      id: "item-2",
+      source: "SPECIALIST_VOTE",
+      priority: 2,
+      content: "Wyckoff Master confirms Phase C Spring",
+    });
+
+    const compiled = engine.compileContext();
+    expect(compiled.content).toContain("Bullish Order Block");
+    expect(compiled.totalTokens).toBeGreaterThan(0);
+    expect(compiled.totalTokens).toBeLessThanOrEqual(80);
+  });
+
+  it("Market Sensei Confluence Engine calculates weighted consensus and identifies contradictions", async () => {
+    const { ConfluenceEngine } = await import("./domains/trading/confluence/confluence-engine.js");
+    const confluence = new ConfluenceEngine({ minAgreementThreshold: 0.6, minConfluenceScore: 60 });
+
+    const votes = [
+      {
+        specialistId: "ob-sensei",
+        specialistName: "Orderblock Sensei",
+        bias: "BULLISH" as const,
+        weight: 1.0,
+        confidence: 85,
+        evidence: "Fresh unmitigated demand zone",
+      },
+      {
+        specialistId: "structure-sensei",
+        specialistName: "Market Structure King",
+        bias: "BULLISH" as const,
+        weight: 1.0,
+        confidence: 90,
+        evidence: "BOS and CHoCH on 4H",
+      },
+      {
+        specialistId: "liquidity-sensei",
+        specialistName: "Liquidity Engineer",
+        bias: "BEARISH" as const,
+        weight: 0.5,
+        confidence: 60,
+        evidence: "Equal highs above not swept yet",
+      },
+    ];
+
+    const report = confluence.evaluateVotes("EURUSD", votes);
+    expect(report.finalBias).toBe("BULLISH");
+    expect(report.recommendedAction).toBe("BUY");
+    expect(report.confluenceScore).toBeGreaterThanOrEqual(60);
+    expect(report.contradictions.length).toBeGreaterThan(0);
+  });
+
+  it("Market Sensei Supervisor passes trade intent through Deterministic Risk Engine", async () => {
+    const { MarketSenseiSupervisor } =
+      await import("./domains/trading/market-sensei/market-sensei-supervisor.js");
+    const supervisor = new MarketSenseiSupervisor();
+
+    const votes = [
+      {
+        specialistId: "ob-sensei",
+        specialistName: "Orderblock Sensei",
+        bias: "BULLISH" as const,
+        weight: 1.0,
+        confidence: 85,
+        evidence: "Demand retest",
+      },
+      {
+        specialistId: "structure-sensei",
+        specialistName: "Market Structure King",
+        bias: "BULLISH" as const,
+        weight: 1.0,
+        confidence: 90,
+        evidence: "Bullish trend",
+      },
+    ];
+
+    const proposal = supervisor.analyzeAndProposeTrade(
+      "EURUSD",
+      1.085,
+      votes,
+      {
+        accountId: "acc-sim-001",
+        balance: 100000,
+        equity: 100000,
+        dailyDrawdownPercent: 0,
+        weeklyDrawdownPercent: 0,
+        openPositionsCount: 0,
+        openRiskExposureUsd: 0,
+      },
+      {
+        stopLossPrice: 1.083, // 20 pips risk
+        takeProfitPrice: 1.091, // 60 pips reward = 3.0 R:R
+        lotSize: 1.0,
+      },
+    );
+
+    expect(proposal.confluence.recommendedAction).toBe("BUY");
+    expect(proposal.intent.direction).toBe("BUY");
+    expect(proposal.riskEvaluation.decision).toBe("APPROVED");
+  });
+
+  it("Social Community Orchestrator routes publication intents through governance approvals", async () => {
+    const { SocialCommunityOrchestrator } = await import("./domains/social/social-orchestrator.js");
+    const social = new SocialCommunityOrchestrator();
+
+    const result = await social.proposePublication({
+      intentId: "pub-001",
+      platform: "TELEGRAM",
+      targetChannelOrGroupId: "@integral_market_vip",
+      contentType: "MARKET_UPDATE",
+      title: "EURUSD Weekly Outlook",
+      content: "Market Sensei confirms multi-timeframe bullish bias into demand.",
+      authorAgentId: "community-sensei",
+      requiresApproval: true,
+    });
+
+    expect(result.status).toBe("PENDING_APPROVAL");
+  });
+
+  it("WhatsApp Department Manager processes sales inquiries and places signals & auth tokens in approval gate", async () => {
+    const { WhatsAppDepartmentManager } =
+      await import("./domains/social/whatsapp/whatsapp-department.js");
+    const wa = new WhatsAppDepartmentManager();
+
+    // 1. Sales inquiry should auto-execute
+    const salesResp = await wa.handleSalesInquiry(
+      "+1234567890",
+      "Interested in AI trading accounts",
+    );
+    expect(salesResp.allowed).toBe(true);
+    expect(salesResp.status).toBe("EXECUTED");
+    expect(salesResp.messageId).toBeDefined();
+
+    // 2. Signal dispatch must be placed in approval queue
+    const signalResp = await wa.handleSignalDispatch(
+      { symbol: "EURUSD", direction: "BUY", entry: 1.085, sl: 1.083, tp: 1.091 },
+      "12036302@g.us",
+    );
+    expect(signalResp.status).toBe("HELD_FOR_APPROVAL");
+
+    // 3. Auth token delivery must be placed in approval queue
+    const authResp = await wa.deliverClientAuthToken("+1234567890", "client-991", "IM-OTP-8842");
+    expect(authResp.status).toBe("HELD_FOR_APPROVAL");
+  });
+
+  it("WhatsApp Gateway routes inbound client requests (#token, #copy, #admin)", async () => {
+    const { WhatsAppGatewayService } = await import("./adapters/whatsapp/whatsapp-gateway.js");
+    const { INTEGRAL_MARKET_GROUPS } =
+      await import("./domains/social/whatsapp/whatsapp-department.js");
+
+    const mockAdapter = {
+      sendTextMessage: vi
+        .fn()
+        .mockResolvedValue({ success: true, data: { messageId: "mock-msg-01" } }),
+    };
+
+    const gateway = new WhatsAppGatewayService({
+      adapter: mockAdapter as any,
+      adminPhone: "255733246558",
+    });
+
+    // Test #token routing
+    await gateway.routeInboundMessage({
+      id: "inbound-1",
+      from: "255683312365@s.whatsapp.net",
+      chatId: INTEGRAL_MARKET_GROUPS.VIP_SALES_SUPPORT,
+      senderName: "Trader Alex",
+      text: "#token",
+      timestamp: Date.now(),
+      isGroup: true,
+      fromMe: false,
+    });
+
+    expect(mockAdapter.sendTextMessage).toHaveBeenCalledOnce();
+    const tokenCall = mockAdapter.sendTextMessage.mock.calls[0];
+    expect(tokenCall[1]).toBe(INTEGRAL_MARKET_GROUPS.VIP_SALES_SUPPORT);
+    expect(tokenCall[2]).toContain("Integral Market Access Verification");
+    expect(tokenCall[2]).toContain("IM-");
+
+    mockAdapter.sendTextMessage.mockClear();
+
+    // Test #copy routing
+    await gateway.routeInboundMessage({
+      id: "inbound-2",
+      from: "255683312365@s.whatsapp.net",
+      chatId: INTEGRAL_MARKET_GROUPS.VIP_SALES_SUPPORT,
+      senderName: "Trader Alex",
+      text: "#copy",
+      timestamp: Date.now(),
+      isGroup: true,
+      fromMe: false,
+    });
+
+    expect(mockAdapter.sendTextMessage).toHaveBeenCalledOnce();
+    const copyCall = mockAdapter.sendTextMessage.mock.calls[0];
+    expect(copyCall[2]).toContain("Copy Trading Desk");
+
+    mockAdapter.sendTextMessage.mockClear();
+
+    // Test Admin Status routing
+    await gateway.routeInboundMessage({
+      id: "inbound-3",
+      from: "255733246558@s.whatsapp.net",
+      chatId: "255733246558@s.whatsapp.net",
+      senderName: "Admin",
+      text: "#admin status",
+      timestamp: Date.now(),
+      isGroup: false,
+      fromMe: false,
+    });
+
+    expect(mockAdapter.sendTextMessage).toHaveBeenCalledOnce();
+    const adminCall = mockAdapter.sendTextMessage.mock.calls[0];
+    expect(adminCall[2]).toContain("imClaw Autonomous Status");
+    expect(adminCall[2]).toContain("CONNECTED");
   });
 });
