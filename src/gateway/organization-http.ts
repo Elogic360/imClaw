@@ -2,19 +2,19 @@ import fs from "node:fs";
 import type { IncomingMessage, ServerResponse } from "node:http";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { OpenWAAdapter } from "../imclaw/adapters/whatsapp/openwa-adapter.js";
-import { HermesAgentBridge } from "../imclaw/hermes/hermes-agent-bridge.js";
-import { OfficeRuntimeService } from "../imclaw/office/office-runtime-service.js";
-import { CompanyRegistry } from "../imclaw/organization/company-registry.js";
-import { CompanySimulationOrchestrator } from "../imclaw/organization/company-simulation.js";
+import { HermesAgentBridge } from "../../extensions/imclaw-core/src/hermes/hermes-agent-bridge.js";
+import { OfficeRuntimeService } from "../../extensions/imclaw-core/src/office/office-runtime-service.js";
+import { CompanyRegistry } from "../../extensions/imclaw-core/src/organization/company-registry.js";
+import { CompanySimulationOrchestrator } from "../../extensions/imclaw-core/src/organization/company-simulation.js";
 import type {
   SpecialistAgent,
   DepartmentConfig,
-} from "../imclaw/organization/organization-types.js";
-import { TaskRouter } from "../imclaw/organization/task-router.js";
+} from "../../extensions/imclaw-core/src/organization/organization-types.js";
+import { TaskRouter } from "../../extensions/imclaw-core/src/organization/task-router.js";
+import { OpenWAAdapter } from "../../extensions/openwa/src/openwa-adapter.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const OFFICE_ASSETS_DIR = path.resolve(__dirname, "../imclaw/ui/office");
+const OFFICE_ASSETS_DIR = path.resolve(__dirname, "../../ui/office");
 
 const sharedRegistry = new CompanyRegistry();
 const sharedRouter = new TaskRouter(sharedRegistry);
@@ -272,6 +272,7 @@ export async function handleImclawOrganizationHttpRequest(
     pathname.startsWith("/imclaw/office") ||
     pathname.startsWith("/api/imclaw/") ||
     pathname.startsWith("/api/hermes") ||
+    pathname.startsWith("/api/openwa") ||
     pathname === "/api/agents" ||
     pathname === "/api/mcp" ||
     pathname === "/api/chat" ||
@@ -618,8 +619,11 @@ export async function handleImclawOrganizationHttpRequest(
     return true;
   }
 
-  // GET /api/openwa/status
-  if (pathname === "/api/openwa/status" && req.method === "GET") {
+  // GET /api/openwa/status or /api/imclaw/openwa/status
+  if (
+    (pathname === "/api/openwa/status" || pathname === "/api/imclaw/openwa/status") &&
+    req.method === "GET"
+  ) {
     const isHealthy = await sharedOpenWaAdapter.checkHealth();
     const sessionRes = await sharedOpenWaAdapter.getSessionStatus(
       process.env.OPENWA_SESSION_ID || "default",
@@ -635,8 +639,11 @@ export async function handleImclawOrganizationHttpRequest(
     return true;
   }
 
-  // POST /api/openwa/config
-  if (pathname === "/api/openwa/config" && req.method === "POST") {
+  // POST /api/openwa/config or /api/imclaw/openwa/config
+  if (
+    (pathname === "/api/openwa/config" || pathname === "/api/imclaw/openwa/config") &&
+    req.method === "POST"
+  ) {
     let body = "";
     req.on("data", (chunk) => {
       body += chunk;
@@ -661,8 +668,11 @@ export async function handleImclawOrganizationHttpRequest(
     return true;
   }
 
-  // POST /api/openwa/send
-  if (pathname === "/api/openwa/send" && req.method === "POST") {
+  // POST /api/openwa/send or /api/imclaw/openwa/send
+  if (
+    (pathname === "/api/openwa/send" || pathname === "/api/imclaw/openwa/send") &&
+    req.method === "POST"
+  ) {
     let body = "";
     req.on("data", (chunk) => {
       body += chunk;
@@ -682,8 +692,11 @@ export async function handleImclawOrganizationHttpRequest(
     return true;
   }
 
-  // GET /api/openwa/chats
-  if (pathname === "/api/openwa/chats" && req.method === "GET") {
+  // GET /api/openwa/chats or /api/imclaw/openwa/chats
+  if (
+    (pathname === "/api/openwa/chats" || pathname === "/api/imclaw/openwa/chats") &&
+    req.method === "GET"
+  ) {
     const session = process.env.OPENWA_SESSION_ID || "default";
     const result = await sharedOpenWaAdapter.listChats(session);
     sendJson(res, result.success ? 200 : 502, result);

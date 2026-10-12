@@ -1,0 +1,839 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>imClaw Agent Office & Command Centre</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    :root {
+      --bg-space: #07090e;
+      --bg-panel: #0d1117;
+      --bg-card: #161b22;
+      --border: #30363d;
+      --border-bright: #58a6ff;
+      --text-main: #f0f6fc;
+      --text-muted: #8b949e;
+      --lobster-red: #ff3344;
+      --lobster-crimson: #c71f37;
+      --lobster-glow: rgba(255, 51, 68, 0.45);
+      --cyan-bright: #00e5ff;
+      --cyan-glow: rgba(0, 229, 255, 0.4);
+      --amber-alert: #f59e0b;
+      --green-online: #10b981;
+      --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+      --font-ui: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; overflow: hidden; background: var(--bg-space); font-family: var(--font-ui); color: var(--text-main); }
+
+    /* Top Command Header */
+    #topbar {
+      position: absolute; top: 0; left: 0; right: 0; height: 56px;
+      background: rgba(13, 17, 23, 0.85); backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between;
+      padding: 0 20px; z-index: 50;
+    }
+    .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 18px; letter-spacing: 0.5px; }
+    .brand-icon { width: 32px; height: 32px; filter: drop-shadow(0 0 8px var(--lobster-glow)); }
+    .status-capsules { display: flex; gap: 10px; align-items: center; font-size: 12px; }
+    .capsule {
+      background: var(--bg-card); border: 1px solid var(--border); border-radius: 20px; padding: 4px 12px;
+      display: flex; align-items: center; gap: 6px;
+    }
+    .capsule-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green-online); box-shadow: 0 0 6px var(--green-online); }
+
+    /* Navigation Quick Switch */
+    .top-actions { display: flex; gap: 8px; }
+    .btn {
+      background: var(--bg-card); border: 1px solid var(--border); color: var(--text-main);
+      padding: 6px 14px; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer;
+      transition: all 0.2s ease; text-decoration: none; display: inline-flex; align-items: center; gap: 6px;
+    }
+    .btn:hover { background: #21262d; border-color: var(--border-bright); }
+    .btn-primary { background: var(--lobster-crimson); border-color: var(--lobster-red); color: white; }
+    .btn-primary:hover { background: var(--lobster-red); box-shadow: 0 0 10px var(--lobster-glow); }
+
+    /* Main Canvas Viewport */
+    #office-viewport {
+      position: absolute; top: 56px; left: 0; right: 0; bottom: 0;
+      overflow: hidden; touch-action: none;
+    }
+    #office-canvas { width: 100%; height: 100%; display: block; }
+
+    /* HUD Floating Overlays */
+    #hud-layer { position: absolute; inset: 56px 0 0 0; pointer-events: none; z-index: 10; }
+
+    /* Search & Filter Bar */
+    #search-bar {
+      position: absolute; top: 16px; left: 20px; width: 320px; pointer-events: auto;
+      background: rgba(13, 17, 23, 0.9); backdrop-filter: blur(8px);
+      border: 1px solid var(--border); border-radius: 8px; padding: 8px 14px;
+      display: flex; align-items: center; gap: 10px; box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+    }
+    #search-input {
+      background: transparent; border: none; outline: none; color: white; font-size: 13px; width: 100%;
+    }
+
+    /* Live Task Command Composer */
+    #task-composer {
+      position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); width: 620px; max-width: 90%;
+      pointer-events: auto; background: rgba(13, 17, 23, 0.92); backdrop-filter: blur(12px);
+      border: 1px solid var(--border); border-radius: 12px; padding: 12px 16px;
+      box-shadow: 0 12px 36px rgba(0,0,0,0.6); display: flex; flex-direction: column; gap: 10px;
+    }
+    .composer-row { display: flex; gap: 10px; align-items: center; }
+    #composer-input {
+      flex: 1; background: var(--bg-card); border: 1px solid var(--border); border-radius: 6px;
+      padding: 10px 14px; color: white; font-size: 14px; outline: none;
+    }
+    #composer-input:focus { border-color: var(--cyan-bright); box-shadow: 0 0 8px var(--cyan-glow); }
+
+    /* Detail Drawer Panel */
+    #detail-drawer {
+      position: absolute; top: 56px; right: -480px; width: 440px; bottom: 0;
+      background: rgba(13, 17, 23, 0.95); backdrop-filter: blur(16px);
+      border-left: 1px solid var(--border); box-shadow: -10px 0 30px rgba(0,0,0,0.7);
+      transition: right 0.3s cubic-bezier(0.16, 1, 0.3, 1); pointer-events: auto;
+      display: flex; flex-direction: column; z-index: 40;
+    }
+    #detail-drawer.open { right: 0; }
+    .drawer-header {
+      padding: 20px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between;
+    }
+    .drawer-avatar-wrap {
+      display: flex; align-items: center; gap: 14px;
+    }
+    .drawer-avatar {
+      width: 52px; height: 52px; border-radius: 12px; background: #21262d; border: 2px solid var(--lobster-red);
+      display: flex; align-items: center; justify-content: center; box-shadow: 0 0 12px var(--lobster-glow);
+    }
+    .drawer-tabs {
+      display: flex; border-bottom: 1px solid var(--border); padding: 0 10px;
+    }
+    .drawer-tab {
+      padding: 12px 16px; font-size: 13px; font-weight: 600; color: var(--text-muted); cursor: pointer;
+      border-bottom: 2px solid transparent; transition: all 0.2s;
+    }
+    .drawer-tab.active { color: var(--cyan-bright); border-color: var(--cyan-bright); }
+    .drawer-body {
+      flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 16px; font-size: 13px;
+    }
+    .field-card {
+      background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; padding: 12px 14px;
+    }
+    .field-label { font-size: 11px; text-transform: uppercase; color: var(--text-muted); font-weight: 700; margin-bottom: 4px; }
+    .tag-cloud { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+    .tag {
+      background: rgba(88, 166, 255, 0.1); border: 1px solid rgba(88, 166, 255, 0.25); color: #58a6ff;
+      border-radius: 4px; padding: 2px 8px; font-size: 11px; font-family: var(--font-mono);
+    }
+    .status-badge {
+      display: inline-block; padding: 3px 8px; border-radius: 12px; font-size: 11px; font-weight: 700;
+    }
+    .status-IDLE { background: rgba(16, 185, 129, 0.15); color: var(--green-online); border: 1px solid var(--green-online); }
+    .status-RUNNING { background: rgba(0, 229, 255, 0.15); color: var(--cyan-bright); border: 1px solid var(--cyan-bright); box-shadow: 0 0 8px var(--cyan-glow); }
+    .status-BLOCKED { background: rgba(245, 158, 11, 0.15); color: var(--amber-alert); border: 1px solid var(--amber-alert); }
+
+    /* Accessible Alternate List View Modal */
+    #accessible-view {
+      display: none; position: absolute; inset: 56px 0 0 0; background: var(--bg-space);
+      z-index: 30; padding: 30px; overflow-y: auto; pointer-events: auto;
+    }
+    #accessible-view.active { display: block; }
+    .roster-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 16px; margin-top: 20px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Bar -->
+  <header id="topbar">
+    <div class="brand">
+      <svg class="brand-icon" viewBox="0 0 100 100">
+        <path d="M 50 15 C 30 15, 20 35, 25 55 C 15 50, 10 65, 20 75 C 25 80, 40 85, 50 85 C 60 85, 75 80, 80 75 C 90 65, 85 50, 75 55 C 80 35, 70 15, 50 15 Z" fill="#ff3344" />
+        <circle cx="42" cy="35" r="4" fill="#00e5ff" />
+        <circle cx="58" cy="35" r="4" fill="#00e5ff" />
+        <path d="M 45 48 Q 50 54 55 48" stroke="#ffffff" stroke-width="2" fill="none" />
+      </svg>
+      <span>imClaw <span style="font-size:12px; color:var(--text-muted); font-weight:400;">Autonomous Intelligence Office</span></span>
+    </div>
+
+    <div class="status-capsules">
+      <div class="capsule">
+        <span class="capsule-dot"></span>
+        <span id="agents-online-count">38 Agents</span>
+      </div>
+      <div class="capsule">
+        <span style="color:var(--cyan-bright); font-weight:bold;">⚡ 7</span>
+        <span>Departments</span>
+      </div>
+      <div class="capsule" id="capsule-openwa" style="cursor:pointer;" onclick="openOpenWaModal()">
+        <span style="color:#25d366; font-weight:bold;">💬 OpenWA</span>
+        <span id="openwa-status-text">Active</span>
+      </div>
+      <div class="capsule">
+        <span style="color:var(--amber-alert); font-weight:bold;">🛡 Risk Guard</span>
+        <span>Active</span>
+      </div>
+    </div>
+
+    <div class="top-actions">
+      <button class="btn" onclick="openOpenWaModal()">💬 WhatsApp MCP</button>
+      <button class="btn" id="btn-toggle-view" onclick="toggleAccessibleView()">📋 Accessible List</button>
+      <button class="btn" onclick="resetCamera()">🎯 Reset Camera</button>
+      <a class="btn btn-primary" href="/" target="_blank">Control UI ↗</a>
+    </div>
+  </header>
+
+  <!-- Interactive 3D/2.5D Isometric Canvas Viewport -->
+  <div id="office-viewport">
+    <canvas id="office-canvas"></canvas>
+  </div>
+
+  <!-- HUD Layer -->
+  <div id="hud-layer">
+    <!-- Search / Filter -->
+    <div id="search-bar">
+      <span style="color:var(--text-muted);">🔍</span>
+      <input type="text" id="search-input" placeholder="Search agent desk, role, skill, or lead..." oninput="onSearchInput(this.value)">
+    </div>
+
+    <!-- Live Natural-Language Task Composer -->
+    <div id="task-composer">
+      <div class="composer-row">
+        <input type="text" id="composer-input" placeholder="Describe work: 'Reconcile Q4 revenue and prepare executive summary'..." onkeydown="onComposerKeyDown(event)">
+        <button class="btn btn-primary" onclick="submitTask()">Dispatch Task</button>
+      </div>
+      <div style="font-size: 11px; color: var(--text-muted); display:flex; justify-content:space-between;">
+        <span>Press <kbd style="background:#21262d; padding:2px 4px; border-radius:3px;">Enter</kbd> to route automatically through TaskRouter</span>
+        <span id="composer-status" style="color:var(--cyan-bright);"></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Agent Detail Drawer -->
+  <aside id="detail-drawer">
+    <div class="drawer-header">
+      <div class="drawer-avatar-wrap">
+        <div class="drawer-avatar">
+          <svg width="36" height="36" viewBox="0 0 100 100">
+            <path d="M 50 15 C 30 15, 20 35, 25 55 C 15 50, 10 65, 20 75 C 25 80, 40 85, 50 85 C 60 85, 75 80, 80 75 C 90 65, 85 50, 75 55 C 80 35, 70 15, 50 15 Z" fill="#ff3344" />
+            <circle cx="42" cy="35" r="4" fill="#00e5ff" />
+            <circle cx="58" cy="35" r="4" fill="#00e5ff" />
+          </svg>
+        </div>
+        <div>
+          <h2 id="drawer-agent-name" style="font-size:16px;">Agent Name</h2>
+          <div id="drawer-agent-role" style="font-size:12px; color:var(--text-muted);">Desk Role</div>
+        </div>
+      </div>
+      <button class="btn" style="padding:4px 8px;" onclick="closeDrawer()">✕</button>
+    </div>
+
+    <div class="drawer-tabs">
+      <div class="drawer-tab active" onclick="switchDrawerTab('overview', this)">Overview</div>
+      <div class="drawer-tab" onclick="switchDrawerTab('skills', this)">Skills & Tools</div>
+      <div class="drawer-tab" onclick="switchDrawerTab('chat', this)">Desk Chat</div>
+    </div>
+
+    <div class="drawer-body" id="drawer-tab-overview">
+      <div class="field-card">
+        <div class="field-label">Current Execution State</div>
+        <span id="drawer-agent-status" class="status-badge status-IDLE">IDLE</span>
+      </div>
+
+      <div class="field-card">
+        <div class="field-label">Department & Hierarchy</div>
+        <div id="drawer-agent-dept" style="font-weight:600; color:#58a6ff;">Executive</div>
+      </div>
+
+      <div class="field-card">
+        <div class="field-label">Operational Brief & Purpose</div>
+        <div id="drawer-agent-does" style="line-height:1.5;">Does details...</div>
+      </div>
+    </div>
+
+    <div class="drawer-body" id="drawer-tab-skills" style="display:none;">
+      <div class="field-card">
+        <div class="field-label">Assigned Skills</div>
+        <div id="drawer-agent-skills" class="tag-cloud"></div>
+      </div>
+
+      <div class="field-card">
+        <div class="field-label">Connected Tools & Connectors</div>
+        <div id="drawer-agent-tools" class="tag-cloud"></div>
+      </div>
+    </div>
+
+    <div class="drawer-body" id="drawer-tab-chat" style="display:none; flex:1; flex-direction:column;">
+      <div id="chat-messages" style="flex:1; overflow-y:auto; display:flex; flex-direction:column; gap:10px; max-height:360px;">
+        <div style="background:var(--bg-card); padding:10px; border-radius:6px; font-size:12px; border:1px solid var(--border);">
+          <b style="color:var(--cyan-bright);">System:</b> Direct channel connected to this desk.
+        </div>
+      </div>
+      <div style="display:flex; gap:8px; margin-top:12px;">
+        <input type="text" id="chat-input" placeholder="Message this specialist..." style="flex:1; background:var(--bg-card); border:1px solid var(--border); padding:8px 12px; color:white; border-radius:6px;" onkeydown="if(event.key==='Enter') sendDeskMessage()">
+        <button class="btn btn-primary" onclick="sendDeskMessage()">Send</button>
+      </div>
+    </div>
+  </aside>
+
+  <!-- OpenWA WhatsApp MCP Integration Modal -->
+  <div id="openwa-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.75); z-index:100; align-items:center; justify-content:center; backdrop-filter:blur(4px);">
+    <div style="background:var(--bg-card); border:1px solid var(--border); border-radius:12px; width:90%; max-width:640px; padding:24px; box-shadow:0 12px 36px rgba(0,0,0,0.8); display:flex; flex-direction:column; gap:16px;">
+      <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--border); padding-bottom:12px;">
+        <div style="display:flex; align-items:center; gap:8px;">
+          <span style="font-size:20px;">💬</span>
+          <h3 style="margin:0; font-size:18px;">OpenWA WhatsApp Autonomous MCP Gateway</h3>
+        </div>
+        <button class="btn" onclick="closeOpenWaModal()">✕</button>
+      </div>
+
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+        <div class="field-card">
+          <div class="field-label">OpenWA API Base URL</div>
+          <input type="text" id="openwa-url-input" value="http://127.0.0.1:2785" style="width:100%; background:var(--bg-space); border:1px solid var(--border); border-radius:6px; padding:6px 10px; color:white; font-size:12px; margin-top:4px;">
+        </div>
+        <div class="field-card">
+          <div class="field-label">Execution Mode</div>
+          <select id="openwa-mode-select" style="width:100%; background:var(--bg-space); border:1px solid var(--border); border-radius:6px; padding:6px 10px; color:white; font-size:12px; margin-top:4px;">
+            <option value="SIMULATION">SIMULATION (Dry-Run / Sandbox)</option>
+            <option value="LIVE">LIVE (Real WhatsApp Hardware)</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="field-card">
+        <div class="field-label">OpenWA Bearer API Key / Token</div>
+        <input type="password" id="openwa-key-input" placeholder="Enter OpenWA API Key (e.g. owa_k1_...)" style="width:100%; background:var(--bg-space); border:1px solid var(--border); border-radius:6px; padding:6px 10px; color:white; font-size:12px; margin-top:4px;">
+      </div>
+
+      <div style="display:flex; gap:8px; justify-content:flex-end;">
+        <button class="btn" onclick="checkOpenWaStatus()">🔄 Test Connection</button>
+        <button class="btn btn-primary" onclick="saveOpenWaConfig()">💾 Save Config</button>
+      </div>
+
+      <!-- Quick Message Dispatcher -->
+      <div class="field-card" style="margin-top:4px;">
+        <div class="field-label" style="margin-bottom:8px;">Autonomous Message / Group Dispatcher</div>
+        <div style="display:grid; grid-template-columns:1fr 2fr auto; gap:8px;">
+          <input type="text" id="openwa-msg-recipient" placeholder="Recipient / Group JID" style="background:var(--bg-space); border:1px solid var(--border); border-radius:6px; padding:6px 10px; color:white; font-size:12px;">
+          <input type="text" id="openwa-msg-text" placeholder="Message to broadcast or dispatch..." style="background:var(--bg-space); border:1px solid var(--border); border-radius:6px; padding:6px 10px; color:white; font-size:12px;">
+          <button class="btn btn-primary" onclick="sendOpenWaMessage()">Send</button>
+        </div>
+      </div>
+
+      <!-- Gateway Status Output -->
+      <div class="field-card">
+        <div class="field-label">Gateway Telemetry & Response</div>
+        <pre id="openwa-status-output" style="background:var(--bg-space); padding:8px 10px; border-radius:6px; font-size:11px; color:var(--cyan-bright); margin:6px 0 0 0; max-height:120px; overflow-y:auto; white-space:pre-wrap;"></pre>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Live Runtime State
+    let agents = [];
+    let departments = [];
+    let selectedAgent = null;
+    let searchQuery = "";
+
+    // Canvas & Camera State
+    const canvas = document.getElementById("office-canvas");
+    const ctx = canvas.getContext("2d");
+    let width = 0;
+    let height = 0;
+    let camera = { x: 0, y: 0, zoom: 1.0, isDragging: false, lastX: 0, lastY: 0 };
+
+    function resizeCanvas() {
+      width = canvas.width = window.innerWidth;
+      height = canvas.height = window.innerHeight - 56;
+      render();
+    }
+    window.addEventListener("resize", resizeCanvas);
+
+    // Initial Fetch from authoritative imClaw runtime
+    async function loadRuntimeData() {
+      try {
+        const [agentsRes, deptsRes] = await Promise.all([
+          fetch("/api/agents").then(r => r.json()),
+          fetch("/api/imclaw/departments").then(r => r.json())
+        ]);
+
+        agents = agentsRes.agents || [];
+        departments = deptsRes.departments || [];
+
+        document.getElementById("agents-online-count").textContent = `${agents.length} Agents Online`;
+        renderAccessibleRoster();
+        computeAgentPositions();
+        render();
+      } catch (err) {
+        console.error("Failed to fetch runtime data:", err);
+      }
+    }
+
+    // Dynamic Placement & Layout Engine
+    function computeAgentPositions() {
+      const deptAngles = {};
+      const totalDepts = Math.max(1, departments.length);
+      departments.forEach((d, idx) => {
+        deptAngles[d.id] = (idx / totalDepts) * Math.PI * 2;
+      });
+
+      const deptCounters = {};
+      agents.forEach(a => {
+        const dId = a.department || "trading";
+        deptCounters[dId] = (deptCounters[dId] || 0) + 1;
+        const baseAngle = deptAngles[dId] || 0;
+        const radius = 240 + ((deptCounters[dId] % 3) * 65);
+        const spreadAngle = baseAngle + ((deptCounters[dId] - 2) * 0.22);
+
+        a.posX = Math.cos(spreadAngle) * radius;
+        a.posY = Math.sin(spreadAngle) * radius;
+      });
+    }
+
+    // Canvas Rendering Loop
+    function render() {
+      ctx.clearRect(0, 0, width, height);
+
+      ctx.save();
+      ctx.translate(width / 2 + camera.x, height / 2 + camera.y);
+      ctx.scale(camera.zoom, camera.zoom);
+
+      // 1. Draw Central Brain / Core
+      drawCentralBrain();
+
+      // 2. Draw Department Hub Nodes & Luminous Pathways
+      drawDepartmentPathways();
+
+      // 3. Draw Stylized Red Lobster AI Agent Characters
+      drawAgents();
+
+      ctx.restore();
+    }
+
+    function drawCentralBrain() {
+      const time = Date.now() * 0.002;
+      const pulse = Math.sin(time) * 6;
+
+      // Glow Outer Ring
+      const grad = ctx.createRadialGradient(0, 0, 10, 0, 0, 90 + pulse);
+      grad.addColorStop(0, "rgba(0, 229, 255, 0.35)");
+      grad.addColorStop(0.6, "rgba(255, 51, 68, 0.25)");
+      grad.addColorStop(1, "transparent");
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.arc(0, 0, 90 + pulse, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Brain Core Node
+      ctx.fillStyle = "#0d1117";
+      ctx.strokeStyle = "#00e5ff";
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.arc(0, 0, 48, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+
+      // Center Glyph
+      ctx.fillStyle = "#ffffff";
+      ctx.font = "bold 13px " + getComputedStyle(document.body).fontFamily;
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText("BRAIN CORE", 0, -6);
+      ctx.font = "10px monospace";
+      ctx.fillStyle = "#00e5ff";
+      ctx.fillText("AUTONOMOUS", 0, 10);
+    }
+
+    function drawDepartmentPathways() {
+      departments.forEach(d => {
+        const deptAgents = agents.filter(a => a.department === d.id);
+        deptAgents.forEach(a => {
+          if (!a.posX || !a.posY) return;
+
+          ctx.beginPath();
+          ctx.moveTo(0, 0);
+          ctx.lineTo(a.posX, a.posY);
+          ctx.strokeStyle = "rgba(88, 166, 255, 0.12)";
+          ctx.lineWidth = 1.5;
+          ctx.stroke();
+
+          // Active Task Energy Particle
+          if (a.status === "RUNNING") {
+            const progress = (Date.now() % 2000) / 2000;
+            const pX = a.posX * progress;
+            const pY = a.posY * progress;
+            ctx.beginPath();
+            ctx.arc(pX, pY, 3, 0, Math.PI * 2);
+            ctx.fillStyle = "#00e5ff";
+            ctx.shadowColor = "#00e5ff";
+            ctx.shadowBlur = 8;
+            ctx.fill();
+            ctx.shadowBlur = 0;
+          }
+        });
+      });
+    }
+
+    function drawAgents() {
+      agents.forEach(a => {
+        if (!a.posX || !a.posY) return;
+
+        // Search Filter Dimming
+        if (searchQuery && !matchesSearch(a, searchQuery)) {
+          ctx.globalAlpha = 0.2;
+        } else {
+          ctx.globalAlpha = 1.0;
+        }
+
+        const isSelected = selectedAgent && selectedAgent.id === a.id;
+
+        ctx.save();
+        ctx.translate(a.posX, a.posY);
+
+        // Desk Pedestal
+        ctx.fillStyle = "#161b22";
+        ctx.strokeStyle = isSelected ? "#00e5ff" : "#30363d";
+        ctx.lineWidth = isSelected ? 3 : 1.5;
+        ctx.beginPath();
+        ctx.ellipse(0, 16, 28, 14, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+
+        // Stylized Red Lobster Agent Character
+        drawLobsterCharacter(a, isSelected);
+
+        // Agent Nameplate
+        ctx.fillStyle = "#ffffff";
+        ctx.font = "bold 11px " + getComputedStyle(document.body).fontFamily;
+        ctx.textAlign = "center";
+        ctx.fillText(a.name, 0, 36);
+
+        ctx.font = "9px monospace";
+        ctx.fillStyle = "#8b949e";
+        ctx.fillText(a.role, 0, 48);
+
+        ctx.restore();
+      });
+      ctx.globalAlpha = 1.0;
+    }
+
+    function drawLobsterCharacter(agent, isSelected) {
+      const time = Date.now() * 0.003;
+      const breathe = Math.sin(time + (agent.posX || 0)) * 2;
+
+      // Body Shell (Polished Red Lobster Geometry)
+      ctx.fillStyle = isSelected ? "#ff3344" : "#c71f37";
+      ctx.shadowColor = isSelected ? "rgba(255, 51, 68, 0.6)" : "transparent";
+      ctx.shadowBlur = isSelected ? 16 : 0;
+
+      // Torso / Carapace
+      ctx.beginPath();
+      ctx.ellipse(0, -6 + breathe, 16, 20, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Claws (Left & Right)
+      ctx.beginPath();
+      ctx.arc(-18, -14 + breathe, 8, 0, Math.PI * 2);
+      ctx.arc(18, -14 + breathe, 8, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Expressive Cyan Eyes
+      ctx.fillStyle = "#00e5ff";
+      ctx.shadowColor = "#00e5ff";
+      ctx.shadowBlur = 6;
+      ctx.beginPath();
+      ctx.arc(-6, -16 + breathe, 3.5, 0, Math.PI * 2);
+      ctx.arc(6, -16 + breathe, 3.5, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.shadowBlur = 0;
+
+      // Status Antenna Indicator
+      let statusColor = "#10b981"; // IDLE
+      if (agent.status === "RUNNING") statusColor = "#00e5ff";
+      if (agent.status === "BLOCKED") statusColor = "#f59e0b";
+
+      ctx.fillStyle = statusColor;
+      ctx.beginPath();
+      ctx.arc(0, -28 + breathe, 3, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // Camera Pan & Zoom Listeners
+    canvas.addEventListener("mousedown", e => {
+      camera.isDragging = true;
+      camera.lastX = e.clientX;
+      camera.lastY = e.clientY;
+    });
+
+    window.addEventListener("mousemove", e => {
+      if (camera.isDragging) {
+        camera.x += e.clientX - camera.lastX;
+        camera.y += e.clientY - camera.lastY;
+        camera.lastX = e.clientX;
+        camera.lastY = e.clientY;
+        render();
+      }
+    });
+
+    window.addEventListener("mouseup", () => {
+      camera.isDragging = false;
+    });
+
+    canvas.addEventListener("wheel", e => {
+      e.preventDefault();
+      const zoomFactor = e.deltaY < 0 ? 1.1 : 0.9;
+      camera.zoom = Math.max(0.4, Math.min(3.0, camera.zoom * zoomFactor));
+      render();
+    }, { passive: false });
+
+    // Canvas Agent Click Picking
+    canvas.addEventListener("click", e => {
+      const rect = canvas.getBoundingClientRect();
+      const mouseX = (e.clientX - rect.left - width / 2 - camera.x) / camera.zoom;
+      const mouseY = (e.clientY - rect.top - height / 2 - camera.y) / camera.zoom;
+
+      let clicked = null;
+      for (const a of agents) {
+        if (!a.posX || !a.posY) continue;
+        const dx = mouseX - a.posX;
+        const dy = mouseY - a.posY;
+        if (Math.sqrt(dx * dx + dy * dy) < 28) {
+          clicked = a;
+          break;
+        }
+      }
+
+      if (clicked) {
+        openAgentDetail(clicked);
+      }
+    });
+
+    function openAgentDetail(agent) {
+      selectedAgent = agent;
+      document.getElementById("drawer-agent-name").textContent = agent.name;
+      document.getElementById("drawer-agent-role").textContent = agent.role;
+      document.getElementById("drawer-agent-dept").textContent = agent.department.toUpperCase();
+      document.getElementById("drawer-agent-does").textContent = agent.does || agent.brief || "Specialist desk";
+
+      const statusEl = document.getElementById("drawer-agent-status");
+      statusEl.className = "status-badge status-" + (agent.status || "IDLE");
+      statusEl.textContent = agent.status || "IDLE";
+
+      // Populate Skills
+      const skillsEl = document.getElementById("drawer-agent-skills");
+      skillsEl.innerHTML = (agent.skills || ["task_execution", "reasoning"]).map(s => `<span class="tag">${s}</span>`).join("");
+
+      // Populate Tools
+      const toolsEl = document.getElementById("drawer-agent-tools");
+      toolsEl.innerHTML = (agent.tools || ["filesystem", "memory"]).map(t => `<span class="tag">${t}</span>`).join("");
+
+      document.getElementById("detail-drawer").classList.add("open");
+      render();
+    }
+
+    function closeDrawer() {
+      document.getElementById("detail-drawer").classList.remove("open");
+      selectedAgent = null;
+      render();
+    }
+
+    function resetCamera() {
+      camera = { x: 0, y: 0, zoom: 1.0, isDragging: false, lastX: 0, lastY: 0 };
+      render();
+    }
+
+    function switchDrawerTab(tabName, el) {
+      document.querySelectorAll(".drawer-tab").forEach(t => t.classList.remove("active"));
+      el.classList.add("active");
+
+      document.getElementById("drawer-tab-overview").style.display = tabName === "overview" ? "flex" : "none";
+      document.getElementById("drawer-tab-skills").style.display = tabName === "skills" ? "flex" : "none";
+      document.getElementById("drawer-tab-chat").style.display = tabName === "chat" ? "flex" : "none";
+    }
+
+    async function sendDeskMessage() {
+      if (!selectedAgent) return;
+      const input = document.getElementById("chat-input");
+      const text = input.value.trim();
+      if (!text) return;
+
+      const chatContainer = document.getElementById("chat-messages");
+      chatContainer.innerHTML += `<div style="background:#21262d; padding:8px 10px; border-radius:6px; font-size:12px; align-self:flex-end;"><b>You:</b> ${escapeHtml(text)}</div>`;
+      input.value = "";
+
+      try {
+        const res = await fetch("/api/chat", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ agent: selectedAgent.id, text })
+        }).then(r => r.json());
+
+        chatContainer.innerHTML += `<div style="background:rgba(255,51,68,0.15); border:1px solid rgba(255,51,68,0.3); padding:8px 10px; border-radius:6px; font-size:12px; align-self:flex-start;"><b>${selectedAgent.name}:</b> ${escapeHtml(res.reply)}</div>`;
+        chatContainer.scrollTop = chatContainer.scrollHeight;
+      } catch (err) {
+        chatContainer.innerHTML += `<div style="color:var(--amber-alert); font-size:11px;">Error connecting to agent desk: ${err.message}</div>`;
+      }
+    }
+
+    // Live Task Composer Submission
+    async function submitTask() {
+      const input = document.getElementById("composer-input");
+      const text = input.value.trim();
+      if (!text) return;
+
+      const statusEl = document.getElementById("composer-status");
+      statusEl.textContent = "Routing task through TaskRouter...";
+
+      try {
+        const res = await fetch("/api/imclaw/route", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ prompt: text })
+        }).then(r => r.json());
+
+        statusEl.textContent = `Assigned to ${res.assignedDepartment ? res.assignedDepartment.name : "Department"}`;
+        input.value = "";
+
+        // Trigger brief visual animation on assigned specialists
+        if (res.assignedSpecialists) {
+          res.assignedSpecialists.forEach(s => {
+            const found = agents.find(a => a.id === s.id);
+            if (found) found.status = "RUNNING";
+          });
+          render();
+          setTimeout(() => {
+            res.assignedSpecialists.forEach(s => {
+              const found = agents.find(a => a.id === s.id);
+              if (found) found.status = "IDLE";
+            });
+            render();
+          }, 4000);
+        }
+      } catch (err) {
+        statusEl.textContent = "Task dispatch error: " + err.message;
+      }
+    }
+
+    function onComposerKeyDown(e) {
+      if (e.key === "Enter") {
+        submitTask();
+      }
+    }
+
+    function onSearchInput(query) {
+      searchQuery = query.trim().toLowerCase();
+      render();
+    }
+
+    function matchesSearch(agent, query) {
+      return (
+        agent.name.toLowerCase().includes(query) ||
+        agent.role.toLowerCase().includes(query) ||
+        agent.department.toLowerCase().includes(query) ||
+        (agent.skills && agent.skills.some(s => s.toLowerCase().includes(query)))
+      );
+    }
+
+    // Accessible View
+    function toggleAccessibleView() {
+      const view = document.getElementById("accessible-view");
+      const isVisible = view.classList.toggle("active");
+      document.getElementById("btn-toggle-view").textContent = isVisible ? "🎮 3D Office" : "📋 Accessible List";
+    }
+
+    function renderAccessibleRoster() {
+      const container = document.getElementById("accessible-roster");
+      container.innerHTML = agents.map(a => `
+        <div class="field-card">
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <b>${a.name}</b>
+            <span class="status-badge status-${a.status || 'IDLE'}">${a.status || 'IDLE'}</span>
+          </div>
+          <div style="color:var(--text-muted); font-size:12px; margin:4px 0 8px 0;">${a.role} · ${a.department.toUpperCase()}</div>
+          <p style="font-size:12px; line-height:1.4;">${a.does || a.brief}</p>
+          <button class="btn" style="margin-top:10px; width:100%;" onclick="openAgentDetail(agents.find(x => x.id === '${a.id}')); toggleAccessibleView();">Inspect Agent Desk</button>
+        </div>
+      `).join("");
+    }
+
+    function escapeHtml(str) {
+      return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    }
+
+    // OpenWA WhatsApp Modal & Controller
+    function openOpenWaModal() {
+      document.getElementById("openwa-modal").style.display = "flex";
+      checkOpenWaStatus();
+    }
+
+    function closeOpenWaModal() {
+      document.getElementById("openwa-modal").style.display = "none";
+    }
+
+    async function checkOpenWaStatus() {
+      const statusEl = document.getElementById("openwa-status-output");
+      statusEl.textContent = "Checking OpenWA Gateway...";
+      try {
+        const res = await fetch("/api/openwa/status").then(r => r.json());
+        statusEl.textContent = JSON.stringify(res, null, 2);
+        document.getElementById("openwa-url-input").value = res.baseUrl || "http://127.0.0.1:2785";
+        document.getElementById("openwa-status-text").textContent = res.openwaReachable ? "Connected" : (res.mode === "SIMULATION" ? "Sim Mode" : "Disconnected");
+      } catch (err) {
+        statusEl.textContent = "Error: " + err.message;
+      }
+    }
+
+    async function saveOpenWaConfig() {
+      const baseUrl = document.getElementById("openwa-url-input").value.trim();
+      const apiKey = document.getElementById("openwa-key-input").value.trim();
+      const mode = document.getElementById("openwa-mode-select").value;
+      const statusEl = document.getElementById("openwa-status-output");
+      statusEl.textContent = "Saving configuration...";
+      try {
+        const res = await fetch("/api/openwa/config", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ baseUrl, apiKey, mode })
+        }).then(r => r.json());
+        statusEl.textContent = "Configured: " + JSON.stringify(res, null, 2);
+        checkOpenWaStatus();
+      } catch (err) {
+        statusEl.textContent = "Failed to save: " + err.message;
+      }
+    }
+
+    async function sendOpenWaMessage() {
+      const recipient = document.getElementById("openwa-msg-recipient").value.trim();
+      const message = document.getElementById("openwa-msg-text").value.trim();
+      const statusEl = document.getElementById("openwa-status-output");
+      if (!recipient || !message) {
+        alert("Please provide both recipient and message text.");
+        return;
+      }
+      statusEl.textContent = "Dispatching autonomous message via OpenWA...";
+      try {
+        const res = await fetch("/api/openwa/send", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ recipient, message })
+        }).then(r => r.json());
+        statusEl.textContent = "Dispatch result: " + JSON.stringify(res, null, 2);
+        document.getElementById("openwa-msg-text").value = "";
+      } catch (err) {
+        statusEl.textContent = "Send failed: " + err.message;
+      }
+    }
+
+    // Boot
+    resizeCanvas();
+    loadRuntimeData();
+    checkOpenWaStatus();
+    setInterval(loadRuntimeData, 10000); // Reconciliation every 10s
+  </script>
+</body>
+</html>

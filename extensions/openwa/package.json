@@ -1,0 +1,15 @@
+{
+  "name": "@openclaw/openwa",
+  "version": "1.0.3",
+  "description": "Autonomous OpenWA WhatsApp MCP & Tools for imClaw",
+  "type": "module",
+  "main": "index.ts",
+  "exports": {
+    ".": "./index.ts",
+    "./adapter": "./src/openwa-adapter.ts",
+    "./mcp": "./src/openwa-mcp-server.ts"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.18.1"
+  }
+}

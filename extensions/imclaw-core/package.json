@@ -1,0 +1,12 @@
+{
+  "name": "@openclaw/imclaw-core",
+  "displayName": "imClaw Autonomous Core Extensions",
+  "description": "Autonomous Intelligence, Hermes Memory Bridge, 3D Agent Office runtime, and Company Simulation for imClaw.",
+  "version": "1.0.3",
+  "type": "module",
+  "main": "index.ts",
+  "exports": {
+    ".": "./index.ts",
+    "./*": "./src/*"
+  }
+}
