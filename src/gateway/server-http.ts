@@ -517,6 +517,7 @@ export function createGatewayHttpServer(opts: {
       addAdmittedStage(
         scopedRequestPath.startsWith("/imclaw/") ||
           scopedRequestPath.startsWith("/api/imclaw/") ||
+          scopedRequestPath.startsWith("/api/hermes/") ||
           scopedRequestPath === "/api/agents" ||
           scopedRequestPath === "/api/mcp" ||
           scopedRequestPath === "/api/chat" ||
