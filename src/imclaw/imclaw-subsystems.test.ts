@@ -1106,4 +1106,62 @@ describe("imClaw Autonomous Organization & Multi-Agent Department Simulation", (
     expect(adminCall[2]).toContain("imClaw Autonomous Status");
     expect(adminCall[2]).toContain("CONNECTED");
   });
+
+  it("integrates Hermes Agent Bridge with skill learning, trajectory compression, and sandboxing", async () => {
+    const { HermesAgentBridge } = await import("./hermes/hermes-agent-bridge.js");
+    const bridge = new HermesAgentBridge({ sandboxBackend: "docker" });
+
+    // 1. Skill registration
+    const skill = bridge.registerLearnedSkill({
+      id: "risk-hedging-strategy",
+      name: "Risk Hedging Strategy",
+      description: "Auto-hedge cross-pair exposures during high impact news",
+      code: "export function hedge() { return true; }",
+    });
+    expect(skill.id).toBe("risk-hedging-strategy");
+    expect(bridge.getLearnedSkills().length).toBe(1);
+
+    // 2. Trajectory compression
+    const trajectory = bridge.compressTrajectory([
+      { role: "user", content: "Analyze market confluence on EUR/USD" },
+      {
+        role: "assistant",
+        content: "Examining Orderflow and SMC. decision: Buy at 1.0850 with 15 pip SL.",
+      },
+      { role: "user", content: "Confirm execution through broker." },
+      { role: "assistant", content: "Order executed successfully." },
+    ]);
+    expect(trajectory.compressedTokens).toBeLessThan(trajectory.originalTokens);
+    expect(trajectory.reductionRatio).toBeGreaterThan(0);
+    expect(trajectory.keyDecisions.length).toBeGreaterThan(0);
+
+    // 3. Sandboxed execution
+    const execResult = await bridge.executeSandboxed("python3 -c 'print(42)'");
+    expect(execResult.exitCode).toBe(0);
+    expect(execResult.backend).toBe("docker");
+  });
+
+  it("integrates Agents Office Runtime Service with roster, connectors, and desk chat", async () => {
+    const { OfficeRuntimeService } = await import("./office/office-runtime-service.js");
+    const office = new OfficeRuntimeService();
+
+    // 1. Roster
+    const agents = office.getAgents();
+    expect(agents.length).toBeGreaterThanOrEqual(35);
+    expect(agents.some((a) => a.id === "elead")).toBe(true);
+
+    // 2. MCP Connectors
+    const connectors = office.getMcpConnectors();
+    expect(connectors.length).toBeGreaterThanOrEqual(6);
+    expect(connectors.some((c) => c.id === "chrome")).toBe(true);
+
+    // 3. Routines
+    const routines = office.getRoutines();
+    expect(routines.length).toBeGreaterThanOrEqual(2);
+
+    // 4. Desk Chat
+    const chatRes = await office.chatWithAgent("elead", "Give me the morning briefing");
+    expect(chatRes.agentId).toBe("elead");
+    expect(chatRes.reply).toContain("Acknowledged");
+  });
 });

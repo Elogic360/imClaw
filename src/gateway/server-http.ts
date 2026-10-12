@@ -515,7 +515,13 @@ export function createGatewayHttpServer(opts: {
         }),
       );
       addAdmittedStage(
-        scopedRequestPath.startsWith("/imclaw/") || scopedRequestPath.startsWith("/api/imclaw/"),
+        scopedRequestPath.startsWith("/imclaw/") ||
+          scopedRequestPath.startsWith("/api/imclaw/") ||
+          scopedRequestPath === "/api/agents" ||
+          scopedRequestPath === "/api/mcp" ||
+          scopedRequestPath === "/api/chat" ||
+          scopedRequestPath === "/api/skills" ||
+          scopedRequestPath === "/api/routines",
         async () =>
           (await getOrganizationHttpModule()).handleImclawOrganizationHttpRequest(req, res),
       );

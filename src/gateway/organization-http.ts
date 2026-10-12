@@ -2,6 +2,8 @@ import fs from "node:fs";
 import type { IncomingMessage, ServerResponse } from "node:http";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { HermesAgentBridge } from "../imclaw/hermes/hermes-agent-bridge.js";
+import { OfficeRuntimeService } from "../imclaw/office/office-runtime-service.js";
 import { CompanyRegistry } from "../imclaw/organization/company-registry.js";
 import { CompanySimulationOrchestrator } from "../imclaw/organization/company-simulation.js";
 import type {
@@ -16,6 +18,8 @@ const OFFICE_ASSETS_DIR = path.resolve(__dirname, "../imclaw/ui/office-assets");
 const sharedRegistry = new CompanyRegistry();
 const sharedRouter = new TaskRouter(sharedRegistry);
 const sharedOrchestrator = new CompanySimulationOrchestrator();
+const sharedOfficeService = new OfficeRuntimeService(sharedRegistry);
+const sharedHermesBridge = new HermesAgentBridge();
 
 function sendJson(res: ServerResponse, status: number, body: unknown): void {
   const json = JSON.stringify(body, null, 2);
@@ -262,7 +266,17 @@ export async function handleImclawOrganizationHttpRequest(
   const url = new URL(req.url ?? "/", "http://localhost");
   const pathname = url.pathname;
 
-  if (!pathname.startsWith("/imclaw/office") && !pathname.startsWith("/api/imclaw/")) {
+  const isOfficeOrHermesApi =
+    pathname.startsWith("/imclaw/office") ||
+    pathname.startsWith("/api/imclaw/") ||
+    pathname.startsWith("/api/hermes") ||
+    pathname === "/api/agents" ||
+    pathname === "/api/mcp" ||
+    pathname === "/api/chat" ||
+    pathname === "/api/skills" ||
+    pathname === "/api/routines";
+
+  if (!isOfficeOrHermesApi) {
     return false;
   }
 
@@ -472,6 +486,114 @@ export async function handleImclawOrganizationHttpRequest(
         const result = await sharedOrchestrator.executeCompanyTask(
           parsed.prompt || "Launch Q4 campaign and reconcile finances",
         );
+        sendJson(res, 200, { ok: true, result });
+      } catch (err: any) {
+        sendJson(res, 500, { ok: false, error: err.message });
+      }
+    });
+    return true;
+  }
+
+  // GET /api/agents (Agents Office 3D Command Centre compatibility)
+  if (pathname === "/api/agents" && req.method === "GET") {
+    const agents = sharedOfficeService.getAgents();
+    sendJson(res, 200, { agents, problems: [], files: [] });
+    return true;
+  }
+
+  // GET /api/mcp (Agents Office MCP Connectors Top Bar compatibility)
+  if (pathname === "/api/mcp" && req.method === "GET") {
+    const servers = sharedOfficeService.getMcpConnectors();
+    sendJson(res, 200, {
+      discoveredAt: Date.now(),
+      web: true,
+      browser: { on: true, installed: true },
+      servers,
+      tools: true,
+    });
+    return true;
+  }
+
+  // GET /api/routines (Agents Office Routines compatibility)
+  if (pathname === "/api/routines" && req.method === "GET") {
+    const routines = sharedOfficeService.getRoutines();
+    sendJson(res, 200, routines);
+    return true;
+  }
+
+  // GET /api/skills (Agents Office Skills compatibility)
+  if (pathname === "/api/skills" && req.method === "GET") {
+    sendJson(res, 200, { count: 35, shipped: 35, brain: 0, problems: [] });
+    return true;
+  }
+
+  // POST /api/chat (Agents Office Live Agent Persona Chat)
+  if (pathname === "/api/chat" && req.method === "POST") {
+    let body = "";
+    req.on("data", (chunk) => {
+      body += chunk;
+    });
+    req.on("end", async () => {
+      try {
+        const parsed = JSON.parse(body || "{}");
+        const agentId = parsed.agent || "ceo";
+        const text = parsed.text || "";
+        const history = parsed.history || [];
+        const result = await sharedOfficeService.chatWithAgent(agentId, text, history);
+        sendJson(res, 200, {
+          reply: result.reply,
+          agentId: result.agentId,
+          read: [],
+          tools: result.toolsUsed,
+          interview: false,
+        });
+      } catch (err: any) {
+        sendJson(res, 500, { ok: false, error: err.message });
+      }
+    });
+    return true;
+  }
+
+  // GET /api/hermes/status (Nous Research Hermes Agent Status & Config)
+  if (pathname === "/api/hermes/status" && req.method === "GET") {
+    sendJson(res, 200, {
+      ok: true,
+      config: sharedHermesBridge.getConfig(),
+      learnedSkills: sharedHermesBridge.getLearnedSkills(),
+    });
+    return true;
+  }
+
+  // POST /api/hermes/compress (Hermes Trajectory Compression Engine)
+  if (pathname === "/api/hermes/compress" && req.method === "POST") {
+    let body = "";
+    req.on("data", (chunk) => {
+      body += chunk;
+    });
+    req.on("end", () => {
+      try {
+        const parsed = JSON.parse(body || "{}");
+        const turns = parsed.turns || [];
+        const compressed = sharedHermesBridge.compressTrajectory(turns);
+        sendJson(res, 200, { ok: true, compressed });
+      } catch (err: any) {
+        sendJson(res, 400, { ok: false, error: err.message });
+      }
+    });
+    return true;
+  }
+
+  // POST /api/hermes/execute (Hermes Multi-Backend Sandboxing)
+  if (pathname === "/api/hermes/execute" && req.method === "POST") {
+    let body = "";
+    req.on("data", (chunk) => {
+      body += chunk;
+    });
+    req.on("end", async () => {
+      try {
+        const parsed = JSON.parse(body || "{}");
+        const command = parsed.command || "echo 'sandbox test'";
+        const result = await sharedHermesBridge.executeSandboxed(command, parsed.env);
         sendJson(res, 200, { ok: true, result });
       } catch (err: any) {
         sendJson(res, 500, { ok: false, error: err.message });
