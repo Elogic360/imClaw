@@ -1,4 +1,7 @@
+import fs from "node:fs";
 import type { IncomingMessage, ServerResponse } from "node:http";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { CompanyRegistry } from "../imclaw/organization/company-registry.js";
 import { CompanySimulationOrchestrator } from "../imclaw/organization/company-simulation.js";
 import type {
@@ -6,6 +9,9 @@ import type {
   DepartmentConfig,
 } from "../imclaw/organization/organization-types.js";
 import { TaskRouter } from "../imclaw/organization/task-router.js";
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const OFFICE_ASSETS_DIR = path.resolve(__dirname, "../imclaw/ui/office-assets");
 
 const sharedRegistry = new CompanyRegistry();
 const sharedRouter = new TaskRouter(sharedRegistry);
@@ -228,6 +234,7 @@ function renderHtml(title: string, bodyContent: string): string {
         </p>
       </div>
       <div class="nav-links">
+        <a class="nav-link" href="/imclaw/office/3d" style="background:#238636; color:#fff; border-color:#2ea043; font-weight:600;">🎮 Launch 3D Isometric Office View</a>
         <a class="nav-link" href="/api/imclaw/departments">Departments API (JSON)</a>
         <a class="nav-link" href="/api/imclaw/agents">Agents API (JSON)</a>
         <a class="nav-link" href="/">Back to Control UI</a>
@@ -268,6 +275,50 @@ export async function handleImclawOrganizationHttpRequest(
     });
     res.end();
     return true;
+  }
+
+  // Static office assets & 3D Command Centre bundle
+  if (pathname.startsWith("/imclaw/office/assets/") && req.method === "GET") {
+    const assetRel = pathname.replace("/imclaw/office/assets/", "");
+    const safePath = path.normalize(assetRel).replace(/^(\.\.[\/\\])+/, "");
+    const assetPath = path.join(OFFICE_ASSETS_DIR, safePath);
+    if (fs.existsSync(assetPath) && fs.statSync(assetPath).isFile()) {
+      const ext = path.extname(assetPath).toLowerCase();
+      const mimeTypes: Record<string, string> = {
+        ".html": "text/html; charset=utf-8",
+        ".js": "application/javascript; charset=utf-8",
+        ".json": "application/json; charset=utf-8",
+        ".css": "text/css; charset=utf-8",
+        ".woff2": "font/woff2",
+        ".jpg": "image/jpeg",
+        ".jpeg": "image/jpeg",
+        ".png": "image/png",
+        ".svg": "image/svg+xml",
+      };
+      const contentType = mimeTypes[ext] || "application/octet-stream";
+      res.writeHead(200, {
+        "Content-Type": contentType,
+        "Cache-Control": "public, max-age=3600",
+      });
+      res.end(fs.readFileSync(assetPath));
+      return true;
+    }
+  }
+
+  // 3D Isometric Interactive Agents Office Command Centre
+  if (
+    (pathname === "/imclaw/office/3d" || pathname === "/imclaw/office/3d/") &&
+    req.method === "GET"
+  ) {
+    const commandCentrePath = path.join(OFFICE_ASSETS_DIR, "command-centre-v2.html");
+    if (fs.existsSync(commandCentrePath)) {
+      res.writeHead(200, {
+        "Content-Type": "text/html; charset=utf-8",
+        "Cache-Control": "no-cache",
+      });
+      res.end(fs.readFileSync(commandCentrePath));
+      return true;
+    }
   }
 
   // Visual Dashboard Route
