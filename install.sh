@@ -86,11 +86,17 @@ while [[ $# -gt 0 ]]; do
       SKIP_GATEWAY_START="1"
       shift
       ;;
+    --docker|--podman|--container)
+      USE_CONTAINER="1"
+      shift
+      ;;
     *)
       shift
       ;;
   esac
 done
+
+USE_CONTAINER="${USE_CONTAINER:-0}"
 
 OPENWA_URL="${OPENWA_URL:-${OPENWA_BASE_URL:-http://127.0.0.1:2785}}"
 OPENWA_KEY="${OPENWA_KEY:-${OPENWA_API_KEY:-}}"
@@ -216,6 +222,17 @@ if [[ "\${1:-}" == "update-all" ]]; then
   exit 0
 fi
 
+# Container commands: "imclaw docker <command>" or "imclaw podman <command>"
+if [[ "\${1:-}" == "docker" || "\${1:-}" == "podman" || "\${1:-}" == "container" ]]; then
+  shift
+  if [[ -f "\${REPO_DIR}/scripts/docker/imclaw-container.sh" ]]; then
+    exec "\${REPO_DIR}/scripts/docker/imclaw-container.sh" "\$@"
+  else
+    echo "Error: Container manager not found at \${REPO_DIR}/scripts/docker/imclaw-container.sh" >&2
+    exit 1
+  fi
+fi
+
 # OpenWA WhatsApp Configuration
 export OPENWA_BASE_URL="\${OPENWA_BASE_URL:-${OPENWA_URL}}"
 export OPENWA_API_KEY="\${OPENWA_API_KEY:-${OPENWA_KEY}}"
@@ -239,8 +256,11 @@ case ":${PATH}:" in
     ;;
 esac
 
-# 10. Start / verify gateway
-if [[ "${SKIP_GATEWAY_START}" == "0" ]]; then
+# 10. Start / verify gateway (or container if requested)
+if [[ "${USE_CONTAINER}" == "1" ]]; then
+  info "Deploying imClaw container via Podman/Docker..."
+  "${IMCLAW_BIN_DIR}/imclaw" container deploy
+elif [[ "${SKIP_GATEWAY_START}" == "0" ]]; then
   if curl -s -o /dev/null -w "%{http_code}" "http://127.0.0.1:${GATEWAY_PORT}/" | grep -q "200"; then
     success "imClaw Gateway is already running and healthy at http://127.0.0.1:${GATEWAY_PORT}"
   else
@@ -271,5 +291,6 @@ printf "   - WhatsApp MCP API:  ${CYAN}http://127.0.0.1:${GATEWAY_PORT}/api/open
 printf "   - Departments API:   ${CYAN}http://127.0.0.1:${GATEWAY_PORT}/api/imclaw/departments${NC}\n"
 printf "   - Agents Roster API: ${CYAN}http://127.0.0.1:${GATEWAY_PORT}/api/agents${NC}\n"
 printf "   - Model Providers:   ${CYAN}http://127.0.0.1:${GATEWAY_PORT}/settings/model-providers${NC}\n"
+printf "   - Container Deploy:  ${CYAN}imclaw container deploy${NC} (or ${CYAN}imclaw podman deploy${NC} / ${CYAN}imclaw docker deploy${NC})\n"
 printf "   - Update Anytime:    ${CYAN}imclaw update-all${NC} or ${CYAN}curl -fsSL https://raw.githubusercontent.com/Elogic360/imClaw/main/install.sh | bash -s -- --update${NC}\n"
 printf "${BOLD}${CYAN}================================================================${NC}\n\n"

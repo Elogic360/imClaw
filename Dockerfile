@@ -239,12 +239,12 @@ ARG OPENCLAW_BUNDLED_PLUGIN_DIR
 # If you change these annotations, also update:
 # - docs/install/docker.md ("Base image metadata" section)
 # - https://docs.openclaw.ai/install/docker
-LABEL org.opencontainers.image.source="https://github.com/openclaw/openclaw" \
-  org.opencontainers.image.url="https://openclaw.ai" \
-  org.opencontainers.image.documentation="https://docs.openclaw.ai/install/docker" \
+LABEL org.opencontainers.image.source="https://github.com/Elogic360/imClaw" \
+  org.opencontainers.image.url="https://github.com/Elogic360/imClaw" \
+  org.opencontainers.image.documentation="https://github.com/Elogic360/imClaw#readme" \
   org.opencontainers.image.licenses="MIT" \
-  org.opencontainers.image.title="OpenClaw" \
-  org.opencontainers.image.description="OpenClaw gateway and CLI runtime container image"
+  org.opencontainers.image.title="imClaw" \
+  org.opencontainers.image.description="imClaw autonomous multi-agent gateway and CLI runtime container image"
 
 WORKDIR /app
 
@@ -418,6 +418,7 @@ RUN --mount=type=cache,id=openclaw-bookworm-apt-cache,target=/var/cache/apt,shar
 
 # Expose the CLI binary without requiring npm global writes as non-root.
 RUN ln -sf /app/openclaw.mjs /usr/local/bin/openclaw \
+ && ln -sf /app/openclaw.mjs /usr/local/bin/imclaw \
  && chmod 755 /app/openclaw.mjs
 
 # Pre-create default named-volume mount points so first-run Docker volumes copy
