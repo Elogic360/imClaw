@@ -2,6 +2,7 @@ import fs from "node:fs";
 import type { IncomingMessage, ServerResponse } from "node:http";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { OpenWAAdapter } from "../imclaw/adapters/whatsapp/openwa-adapter.js";
 import { HermesAgentBridge } from "../imclaw/hermes/hermes-agent-bridge.js";
 import { OfficeRuntimeService } from "../imclaw/office/office-runtime-service.js";
 import { CompanyRegistry } from "../imclaw/organization/company-registry.js";
@@ -20,6 +21,7 @@ const sharedRouter = new TaskRouter(sharedRegistry);
 const sharedOrchestrator = new CompanySimulationOrchestrator();
 const sharedOfficeService = new OfficeRuntimeService(sharedRegistry);
 const sharedHermesBridge = new HermesAgentBridge();
+const sharedOpenWaAdapter = new OpenWAAdapter();
 
 function sendJson(res: ServerResponse, status: number, body: unknown): void {
   const json = JSON.stringify(body, null, 2);
@@ -613,6 +615,78 @@ export async function handleImclawOrganizationHttpRequest(
         sendJson(res, 500, { ok: false, error: err.message });
       }
     });
+    return true;
+  }
+
+  // GET /api/openwa/status
+  if (pathname === "/api/openwa/status" && req.method === "GET") {
+    const isHealthy = await sharedOpenWaAdapter.checkHealth();
+    const sessionRes = await sharedOpenWaAdapter.getSessionStatus(
+      process.env.OPENWA_SESSION_ID || "default",
+    );
+    sendJson(res, 200, {
+      ok: true,
+      openwaReachable: isHealthy,
+      baseUrl: sharedOpenWaAdapter.getBaseUrl(),
+      mode: sharedOpenWaAdapter.getMode(),
+      hasApiKey: Boolean(sharedOpenWaAdapter.getApiKey()),
+      session: sessionRes.data,
+    });
+    return true;
+  }
+
+  // POST /api/openwa/config
+  if (pathname === "/api/openwa/config" && req.method === "POST") {
+    let body = "";
+    req.on("data", (chunk) => {
+      body += chunk;
+    });
+    req.on("end", () => {
+      try {
+        const parsed = JSON.parse(body || "{}");
+        sharedOpenWaAdapter.updateConfig(parsed.baseUrl, parsed.apiKey);
+        if (parsed.mode === "LIVE" || parsed.mode === "SIMULATION") {
+          sharedOpenWaAdapter.setMode(parsed.mode);
+        }
+        sendJson(res, 200, {
+          ok: true,
+          baseUrl: sharedOpenWaAdapter.getBaseUrl(),
+          mode: sharedOpenWaAdapter.getMode(),
+          hasApiKey: Boolean(sharedOpenWaAdapter.getApiKey()),
+        });
+      } catch (err: any) {
+        sendJson(res, 400, { ok: false, error: err.message });
+      }
+    });
+    return true;
+  }
+
+  // POST /api/openwa/send
+  if (pathname === "/api/openwa/send" && req.method === "POST") {
+    let body = "";
+    req.on("data", (chunk) => {
+      body += chunk;
+    });
+    req.on("end", async () => {
+      try {
+        const parsed = JSON.parse(body || "{}");
+        const session = parsed.session || process.env.OPENWA_SESSION_ID || "default";
+        const recipient = parsed.recipient || parsed.chatId || "";
+        const message = parsed.message || parsed.text || "";
+        const result = await sharedOpenWaAdapter.sendTextMessage(session, recipient, message);
+        sendJson(res, result.success ? 200 : 502, result);
+      } catch (err: any) {
+        sendJson(res, 500, { ok: false, error: err.message });
+      }
+    });
+    return true;
+  }
+
+  // GET /api/openwa/chats
+  if (pathname === "/api/openwa/chats" && req.method === "GET") {
+    const session = process.env.OPENWA_SESSION_ID || "default";
+    const result = await sharedOpenWaAdapter.listChats(session);
+    sendJson(res, result.success ? 200 : 502, result);
     return true;
   }
 

@@ -14,3 +14,5 @@ export * from "./platform/context/context-engine.js";
 export * from "./domains/trading/index.js";
 export * from "./domains/social/index.js";
 export * from "./adapters/index.js";
+export * from "./adapters/whatsapp/openwa-adapter.js";
+export * from "./mcp/openwa-mcp-server.js";

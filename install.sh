@@ -74,6 +74,14 @@ while [[ $# -gt 0 ]]; do
       FORCE_UPDATE="1"
       shift
       ;;
+    --openwa-url)
+      OPENWA_URL="$2"
+      shift 2
+      ;;
+    --openwa-key)
+      OPENWA_KEY="$2"
+      shift 2
+      ;;
     --no-start)
       SKIP_GATEWAY_START="1"
       shift
@@ -83,6 +91,9 @@ while [[ $# -gt 0 ]]; do
       ;;
   esac
 done
+
+OPENWA_URL="${OPENWA_URL:-${OPENWA_BASE_URL:-http://127.0.0.1:2785}}"
+OPENWA_KEY="${OPENWA_KEY:-${OPENWA_API_KEY:-}}"
 
 print_banner
 
@@ -200,6 +211,10 @@ if [[ "\${1:-}" == "update-all" ]]; then
   exit 0
 fi
 
+# OpenWA WhatsApp Configuration
+export OPENWA_BASE_URL="\${OPENWA_BASE_URL:-${OPENWA_URL}}"
+export OPENWA_API_KEY="\${OPENWA_API_KEY:-${OPENWA_KEY}}"
+
 exec "\${NODE_EXEC}" "\${REPO_DIR}/openclaw.mjs" "\$@"
 WRAPPER_EOF
 
@@ -241,6 +256,7 @@ printf "\n${BOLD}${CYAN}========================================================
 printf "${BOLD}🎉 imClaw ${DISPLAY_VER} is ready on your machine!${NC}\n"
 printf "   - 3D Agent Office:   ${CYAN}http://127.0.0.1:${GATEWAY_PORT}/imclaw/office/3d${NC}\n"
 printf "   - Web Control UI:    ${CYAN}http://127.0.0.1:${GATEWAY_PORT}/${NC}\n"
+printf "   - WhatsApp MCP API:  ${CYAN}http://127.0.0.1:${GATEWAY_PORT}/api/openwa/status${NC}\n"
 printf "   - Departments API:   ${CYAN}http://127.0.0.1:${GATEWAY_PORT}/api/imclaw/departments${NC}\n"
 printf "   - Agents Roster API: ${CYAN}http://127.0.0.1:${GATEWAY_PORT}/api/agents${NC}\n"
 printf "   - Model Providers:   ${CYAN}http://127.0.0.1:${GATEWAY_PORT}/settings/model-providers${NC}\n"

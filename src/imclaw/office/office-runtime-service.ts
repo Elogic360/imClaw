@@ -147,6 +147,23 @@ export class OfficeRuntimeService {
         denied: false,
       },
       {
+        id: "openwa-whatsapp",
+        name: "OpenWA WhatsApp Connector",
+        status: "connected",
+        tools: [
+          "whatsapp_send_message",
+          "whatsapp_send_group_message",
+          "whatsapp_list_chats",
+          "whatsapp_get_group_metadata",
+          "whatsapp_create_group",
+          "whatsapp_list_contacts",
+          "whatsapp_check_status",
+          "whatsapp_configure_credentials",
+        ],
+        allowed: true,
+        denied: false,
+      },
+      {
         id: "tradingview",
         name: "TradingView Charts",
         status: "connected",

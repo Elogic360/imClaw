@@ -169,6 +169,10 @@
         <span style="color:var(--cyan-bright); font-weight:bold;">⚡ 7</span>
         <span>Departments</span>
       </div>
+      <div class="capsule" id="capsule-openwa" style="cursor:pointer;" onclick="openOpenWaModal()">
+        <span style="color:#25d366; font-weight:bold;">💬 OpenWA</span>
+        <span id="openwa-status-text">Active</span>
+      </div>
       <div class="capsule">
         <span style="color:var(--amber-alert); font-weight:bold;">🛡 Risk Guard</span>
         <span>Active</span>
@@ -176,6 +180,7 @@
     </div>
 
     <div class="top-actions">
+      <button class="btn" onclick="openOpenWaModal()">💬 WhatsApp MCP</button>
       <button class="btn" id="btn-toggle-view" onclick="toggleAccessibleView()">📋 Accessible List</button>
       <button class="btn" onclick="resetCamera()">🎯 Reset Camera</button>
       <a class="btn btn-primary" href="/" target="_blank">Control UI ↗</a>
@@ -275,13 +280,57 @@
     </div>
   </aside>
 
-  <!-- Accessible List View -->
-  <div id="accessible-view">
-    <div style="display:flex; justify-content:space-between; align-items:center;">
-      <h2>Organization & Specialist Desks List View</h2>
-      <button class="btn btn-primary" onclick="toggleAccessibleView()">Back to 3D Office</button>
+  <!-- OpenWA WhatsApp MCP Integration Modal -->
+  <div id="openwa-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.75); z-index:100; align-items:center; justify-content:center; backdrop-filter:blur(4px);">
+    <div style="background:var(--bg-card); border:1px solid var(--border); border-radius:12px; width:90%; max-width:640px; padding:24px; box-shadow:0 12px 36px rgba(0,0,0,0.8); display:flex; flex-direction:column; gap:16px;">
+      <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--border); padding-bottom:12px;">
+        <div style="display:flex; align-items:center; gap:8px;">
+          <span style="font-size:20px;">💬</span>
+          <h3 style="margin:0; font-size:18px;">OpenWA WhatsApp Autonomous MCP Gateway</h3>
+        </div>
+        <button class="btn" onclick="closeOpenWaModal()">✕</button>
+      </div>
+
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+        <div class="field-card">
+          <div class="field-label">OpenWA API Base URL</div>
+          <input type="text" id="openwa-url-input" value="http://127.0.0.1:2785" style="width:100%; background:var(--bg-space); border:1px solid var(--border); border-radius:6px; padding:6px 10px; color:white; font-size:12px; margin-top:4px;">
+        </div>
+        <div class="field-card">
+          <div class="field-label">Execution Mode</div>
+          <select id="openwa-mode-select" style="width:100%; background:var(--bg-space); border:1px solid var(--border); border-radius:6px; padding:6px 10px; color:white; font-size:12px; margin-top:4px;">
+            <option value="SIMULATION">SIMULATION (Dry-Run / Sandbox)</option>
+            <option value="LIVE">LIVE (Real WhatsApp Hardware)</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="field-card">
+        <div class="field-label">OpenWA Bearer API Key / Token</div>
+        <input type="password" id="openwa-key-input" placeholder="Enter OpenWA API Key (e.g. owa_k1_...)" style="width:100%; background:var(--bg-space); border:1px solid var(--border); border-radius:6px; padding:6px 10px; color:white; font-size:12px; margin-top:4px;">
+      </div>
+
+      <div style="display:flex; gap:8px; justify-content:flex-end;">
+        <button class="btn" onclick="checkOpenWaStatus()">🔄 Test Connection</button>
+        <button class="btn btn-primary" onclick="saveOpenWaConfig()">💾 Save Config</button>
+      </div>
+
+      <!-- Quick Message Dispatcher -->
+      <div class="field-card" style="margin-top:4px;">
+        <div class="field-label" style="margin-bottom:8px;">Autonomous Message / Group Dispatcher</div>
+        <div style="display:grid; grid-template-columns:1fr 2fr auto; gap:8px;">
+          <input type="text" id="openwa-msg-recipient" placeholder="Recipient / Group JID" style="background:var(--bg-space); border:1px solid var(--border); border-radius:6px; padding:6px 10px; color:white; font-size:12px;">
+          <input type="text" id="openwa-msg-text" placeholder="Message to broadcast or dispatch..." style="background:var(--bg-space); border:1px solid var(--border); border-radius:6px; padding:6px 10px; color:white; font-size:12px;">
+          <button class="btn btn-primary" onclick="sendOpenWaMessage()">Send</button>
+        </div>
+      </div>
+
+      <!-- Gateway Status Output -->
+      <div class="field-card">
+        <div class="field-label">Gateway Telemetry & Response</div>
+        <pre id="openwa-status-output" style="background:var(--bg-space); padding:8px 10px; border-radius:6px; font-size:11px; color:var(--cyan-bright); margin:6px 0 0 0; max-height:120px; overflow-y:auto; white-space:pre-wrap;"></pre>
+      </div>
     </div>
-    <div id="accessible-roster" class="roster-grid"></div>
   </div>
 
   <script>
@@ -716,9 +765,74 @@
       return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
     }
 
+    // OpenWA WhatsApp Modal & Controller
+    function openOpenWaModal() {
+      document.getElementById("openwa-modal").style.display = "flex";
+      checkOpenWaStatus();
+    }
+
+    function closeOpenWaModal() {
+      document.getElementById("openwa-modal").style.display = "none";
+    }
+
+    async function checkOpenWaStatus() {
+      const statusEl = document.getElementById("openwa-status-output");
+      statusEl.textContent = "Checking OpenWA Gateway...";
+      try {
+        const res = await fetch("/api/openwa/status").then(r => r.json());
+        statusEl.textContent = JSON.stringify(res, null, 2);
+        document.getElementById("openwa-url-input").value = res.baseUrl || "http://127.0.0.1:2785";
+        document.getElementById("openwa-status-text").textContent = res.openwaReachable ? "Connected" : (res.mode === "SIMULATION" ? "Sim Mode" : "Disconnected");
+      } catch (err) {
+        statusEl.textContent = "Error: " + err.message;
+      }
+    }
+
+    async function saveOpenWaConfig() {
+      const baseUrl = document.getElementById("openwa-url-input").value.trim();
+      const apiKey = document.getElementById("openwa-key-input").value.trim();
+      const mode = document.getElementById("openwa-mode-select").value;
+      const statusEl = document.getElementById("openwa-status-output");
+      statusEl.textContent = "Saving configuration...";
+      try {
+        const res = await fetch("/api/openwa/config", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ baseUrl, apiKey, mode })
+        }).then(r => r.json());
+        statusEl.textContent = "Configured: " + JSON.stringify(res, null, 2);
+        checkOpenWaStatus();
+      } catch (err) {
+        statusEl.textContent = "Failed to save: " + err.message;
+      }
+    }
+
+    async function sendOpenWaMessage() {
+      const recipient = document.getElementById("openwa-msg-recipient").value.trim();
+      const message = document.getElementById("openwa-msg-text").value.trim();
+      const statusEl = document.getElementById("openwa-status-output");
+      if (!recipient || !message) {
+        alert("Please provide both recipient and message text.");
+        return;
+      }
+      statusEl.textContent = "Dispatching autonomous message via OpenWA...";
+      try {
+        const res = await fetch("/api/openwa/send", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ recipient, message })
+        }).then(r => r.json());
+        statusEl.textContent = "Dispatch result: " + JSON.stringify(res, null, 2);
+        document.getElementById("openwa-msg-text").value = "";
+      } catch (err) {
+        statusEl.textContent = "Send failed: " + err.message;
+      }
+    }
+
     // Boot
     resizeCanvas();
     loadRuntimeData();
+    checkOpenWaStatus();
     setInterval(loadRuntimeData, 10000); // Reconciliation every 10s
   </script>
 </body>

@@ -1164,4 +1164,73 @@ describe("imClaw Autonomous Organization & Multi-Agent Department Simulation", (
     expect(chatRes.agentId).toBe("elead");
     expect(chatRes.reply).toContain("Acknowledged");
   });
+
+  it("integrates OpenWA WhatsApp Autonomous MCP Server with tool discovery and message automation", async () => {
+    const { OpenWaMcpServer } = await import("./mcp/openwa-mcp-server.js");
+    const { Client } = await import("@modelcontextprotocol/sdk/client/index.js");
+    const { InMemoryTransport } = await import("@modelcontextprotocol/sdk/inMemory.js");
+
+    const openwaMcp = new OpenWaMcpServer();
+    const server = openwaMcp.getMcpServer();
+
+    const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
+    const client = new Client(
+      { name: "imclaw-agent-test-client", version: "1.0.0" },
+      { capabilities: {} },
+    );
+
+    await Promise.all([server.connect(serverTransport), client.connect(clientTransport)]);
+
+    try {
+      // 1. Tool discovery
+      const toolList = await client.listTools();
+      const toolNames = toolList.tools.map((t) => t.name);
+      expect(toolNames).toContain("whatsapp_send_message");
+      expect(toolNames).toContain("whatsapp_send_group_message");
+      expect(toolNames).toContain("whatsapp_list_chats");
+      expect(toolNames).toContain("whatsapp_get_group_metadata");
+      expect(toolNames).toContain("whatsapp_create_group");
+      expect(toolNames).toContain("whatsapp_list_contacts");
+      expect(toolNames).toContain("whatsapp_check_status");
+      expect(toolNames).toContain("whatsapp_configure_credentials");
+
+      // 2. Tool invocation: check status
+      const statusRes = await client.callTool({
+        name: "whatsapp_check_status",
+        arguments: {},
+      });
+      expect(statusRes.content[0].type).toBe("text");
+      const statusParsed = JSON.parse((statusRes.content[0] as any).text);
+      expect(statusParsed.openwaReachable).toBe(true);
+
+      // 3. Tool invocation: send direct message
+      const sendRes = await client.callTool({
+        name: "whatsapp_send_message",
+        arguments: {
+          recipient: "255733246558",
+          message: "Autonomous briefing ready from imClaw.",
+        },
+      });
+      const sendParsed = JSON.parse((sendRes.content[0] as any).text);
+      expect(sendParsed.success).toBe(true);
+      expect(sendParsed.recipient).toBe("255733246558@s.whatsapp.net");
+
+      // 4. Tool invocation: configure credentials
+      const configRes = await client.callTool({
+        name: "whatsapp_configure_credentials",
+        arguments: {
+          baseUrl: "http://127.0.0.1:2785",
+          apiKey: "test-key-12345",
+          mode: "SIMULATION",
+        },
+      });
+      const configParsed = JSON.parse((configRes.content[0] as any).text);
+      expect(configParsed.configured).toBe(true);
+      expect(configParsed.hasApiKey).toBe(true);
+      expect(configParsed.baseUrl).toBe("http://127.0.0.1:2785");
+    } finally {
+      await client.close();
+      await server.close();
+    }
+  });
 });
