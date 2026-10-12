@@ -1,69 +1,125 @@
-# OpenClaw 🦞 — Your assistant, on your devices, in your chats
+# imClaw 🦞 — Autonomous Multi-Agent Platform & Social Gateway
+
+> **Your assistant, on your devices, in your chats, running your company, code, and trading operations.**
 
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/openclaw/openclaw/main/docs/assets/openclaw-banner-light.png">
-    <img src="https://raw.githubusercontent.com/openclaw/openclaw/main/docs/assets/openclaw-banner-dark.png" alt="OpenClaw — EXFOLIATE! EXFOLIATE! Your AI assistant, running on your own devices.">
+    <img src="https://raw.githubusercontent.com/openclaw/openclaw/main/docs/assets/openclaw-banner-dark.png" alt="imClaw — Autonomous Multi-Agent Platform">
   </picture>
 </p>
 
 <p align="center">
-  <a href="https://github.com/openclaw/openclaw/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/openclaw/openclaw/ci.yml?branch=main&style=flat-square&label=ci" alt="CI status"></a>
-  <a href="https://www.npmjs.com/package/openclaw"><img src="https://img.shields.io/npm/v/openclaw?style=flat-square&label=npm" alt="npm version"></a>
-  <a href="https://nodejs.org"><img src="https://img.shields.io/node/v/openclaw?style=flat-square" alt="Node.js version"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-green?style=flat-square" alt="License: MIT"></a>
-  <a href="https://discord.gg/clawd"><img src="https://img.shields.io/discord/1456350064065904867?label=discord&logo=discord&logoColor=white&color=5865F2&style=flat-square" alt="Discord"></a>
+  <a href="https://github.com/Elogic360/imClaw"><img src="https://img.shields.io/badge/github-Elogic360%2FimClaw-blue?style=flat-square&logo=github" alt="imClaw GitHub"></a>
+  <a href="https://nodejs.org"><img src="https://img.shields.io/node/v/openclaw?style=flat-square" alt="Node.js version"></a>
 </p>
 
-OpenClaw is an open-source AI assistant that runs on your own computer and meets you in the channels you already use: Discord, iMessage, Slack, Teams, Telegram, WhatsApp, and 20+ more, plus native apps for macOS, iOS, Android, Windows, and Linux. One Gateway runs it as a personal assistant on a laptop or as a shared [team deployment](https://docs.openclaw.ai/start/teams); configuration is the only difference.
+imClaw is an autonomous open-source multi-agent platform and social gateway that connects to any model provider, runs 24/7 background workflows, automates trading and financial risk fences, and orchestrates a 35-specialist corporate organization with an interactive 3D command center.
 
-**Yours, with no catch.** State, memory, and credentials live on your hardware. Models and agent harnesses (Claude, Codex, local models) are plugins you can swap without changing anything else. Your prompts go to the model provider and chat platforms you configure, plus any diagnostics export you enable yourself; by default OpenClaw itself phones home for nothing but a daily version check, anonymous feature statistics are opt-in, and `update.checkOnStart: false` disables both ([what OpenClaw sends](https://docs.openclaw.ai/gateway/telemetry)). OpenClaw is stewarded by the [OpenClaw Foundation](https://openclaw.org), an independent 501(c)(3), and has no paid tier, hosted service, or token. The architecture case — trusted gateway, untrusted execution, deterministic policy — is in [Why OpenClaw](https://docs.openclaw.ai/start/why-openclaw).
+---
 
-[Website](https://openclaw.ai) · [Docs](https://docs.openclaw.ai) · [Getting started](https://docs.openclaw.ai/start/getting-started) · [Why OpenClaw](https://docs.openclaw.ai/start/why-openclaw) · [FAQ](https://docs.openclaw.ai/help/faq) · [Vision](VISION.md) · [DeepWiki](https://deepwiki.com/openclaw/openclaw)
+## 🌟 Core Architecture & 6 Pillars
 
-## Install
+### #1 Connect — Lives Everywhere
 
-The installer supports macOS, Linux, and Windows. It provisions a supported Node.js runtime when needed.
+**Telegram, Discord, Slack, WhatsApp, Signal, Email, CLI** — and a growing list of platforms. One agent, one memory, every surface.
+
+- Native WhatsApp Gateway with multi-session capability (powered by OpenWA protocol).
+- Discord, Slack, Telegram, Signal, iMessage, and terminal TUI/CLI.
+- Unified multi-channel routing with persistent session continuity across channels.
+
+### #2 Remember — Persistent Memory
+
+**It learns your projects, auto-generates skills, and never forgets how it solved a problem.**
+
+- Multi-tier memory engine: Working Context, Episodic memory, and Semantic Knowledge base.
+- Procedural skill acquisition & self-improving memory loop (powered by Hermes & Agent Learning Engine).
+- Automated operator correction capture: learns lessons from interactions and promotes validated organizational guidelines.
+
+### #3 Schedule — Focused Automation
+
+**Natural-language scheduling for reports, backups, and briefings — running unattended through the gateway, focused every time.**
+
+- Autonomous Scheduler engine supporting cron patterns, intervals, and natural-language triggers.
+- Unattended routines for automated trading scans, daily financial reconciliations, team standups, and social broadcasts.
+- Dead-letter handling, persistent execution logs, and automated retry policies.
+
+### #4 Delegate — Tasks Multiplied
+
+**Isolated subagents with their own conversations, terminals, and Python RPC scripts for zero-context-cost pipelines.**
+
+- Autonomous Organization & 3D Interactive Agents Office with 35 specialist desks across 6 core corporate departments (Engineering, Product, Marketing, Sales, Operations, Finance) plus Trading Desks.
+- Hierarchical task routing: Department leads decompose tasks, dispatch concurrent specialist work, and synthesize finished deliverables.
+- Subagent isolation with Compare-And-Swap (CAS) session claim fencing.
+
+### #5 Search — Browse the Web & Multi-Modal Intelligence
+
+**Web search, browser automation, vision, image generation, text-to-speech, and multi-model reasoning.**
+
+- Integrated headless browser automation and web search tools.
+- Multi-model routing engine dynamically selecting optimal LLMs (Google Antigravity/Gemini Flash & Pro, Nous Portal / Hermes-Agent, Anthropic Claude 3.7 Sonnet, DeepSeek R1, OpenAI).
+- Live audio/speech direction with prosody pacing tags and streaming thought scrubber.
+
+### #6 Experiment — Isolated Sandboxing
+
+**Five backends — local, Docker, SSH, Singularity, Modal — with container hardening and namespace isolation.**
+
+- Hardened sandbox execution backends ensuring safe code execution.
+- Deterministic Risk Engine & Policy Guard for financial trades (max drawdown, enforced stop-loss, risk-per-trade fences).
+- Binary bitmask ACL security authority and runtime self-protection against destructive commands.
+
+---
+
+## 🏢 Interactive 3D Agents Office Command Centre
+
+Access the real-time visual office:
+
+- **3D Isometric Interactive Command Centre:** [http://127.0.0.1:18789/imclaw/office/3d](http://127.0.0.1:18789/imclaw/office/3d)
+- **Organization Hierarchy Dashboard:** [http://127.0.0.1:18789/imclaw/office](http://127.0.0.1:18789/imclaw/office)
+- **Control Web UI:** [http://127.0.0.1:18789/](http://127.0.0.1:18789/)
+
+---
+
+## ⚡ Universal Quick Install
+
+### Linux / macOS / WSL2
 
 ```bash
-# macOS / Linux / WSL2
-curl -fsSL https://openclaw.ai/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/Elogic360/imClaw/main/install.sh | bash
 ```
+
+### Windows (Native PowerShell)
 
 ```powershell
-# Windows PowerShell
-iwr -useb https://openclaw.ai/install.ps1 | iex
+iex (irm https://raw.githubusercontent.com/Elogic360/imClaw/main/install.ps1)
 ```
 
-Already manage Node.js? Install the published package instead (Node 24.16+ or 26.1+; Node 26 recommended):
+---
 
-```bash
-npm install -g openclaw@latest --allow-scripts=openclaw
-```
+## ❓ FAQs
 
-That command is for npm 12 or npm 11.16+. On npm 11.15 and earlier, omit
-`--allow-scripts=openclaw`. See the
-[installation guide](https://docs.openclaw.ai/install) for the lifecycle script
-contract, Docker, Nix, and other deployment paths.
+<details>
+<summary><b>How does imClaw connect to any model provider?</b></summary>
+imClaw provides a unified Model Router and Provider Bridge. You can configure Gemini, Claude, OpenAI, DeepSeek, Ollama, or Hermes models seamlessly via CLI or web UI.
+</details>
 
-## Quick start
+<details>
+<summary><b>Can imClaw run unattended automations and trading?</b></summary>
+Yes. imClaw features a built-in Deterministic Risk Engine that enforces strict drawdowns and stop-loss policies before any trade reaches the broker adapter. Its autonomous scheduler runs background routines 24/7.
+</details>
 
-On a fresh install, the installer scripts start onboarding automatically.
-Complete the wizard they open. If you installed the package directly with npm,
-pnpm, or Bun, run:
+<details>
+<summary><b>How do subagents communicate?</b></summary>
+Subagents run in isolated execution contexts and exchange messages through the typed Reactive Event Bus and RPC pipelines without bloating the parent agent context tokens.
+</details>
 
-```bash
-openclaw onboard --install-daemon
-```
+<details>
+<summary><b>Is my data kept local?</b></summary>
+Yes. All credentials, sqlite state, session logs, trade journals, and memory indexes are stored locally on your machine.
+</details>
 
-After onboarding:
-
-```bash
-openclaw gateway status
-openclaw dashboard
-```
-
-Onboarding verifies model access, creates the workspace, and configures the Gateway. The last command opens the Control UI; send a message there to confirm the assistant is working. See the [getting started guide](https://docs.openclaw.ai/start/getting-started) for channel setup and troubleshooting.
+---
 
 ## How it fits together
 
