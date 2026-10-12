@@ -1,4 +1,5 @@
 {
+  "id": "imclaw-core",
   "name": "imclaw-core",
   "displayName": "imClaw Core Extensions",
   "description": "Autonomous Office, Company Simulation, Hermes Bridge, and Domain Orchestration.",

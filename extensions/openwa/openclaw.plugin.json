@@ -1,4 +1,5 @@
 {
+  "id": "openwa",
   "name": "openwa",
   "displayName": "OpenWA WhatsApp MCP & Tools",
   "description": "Autonomous WhatsApp MCP Tools & REST bridge for imClaw agents via OpenWA.",
