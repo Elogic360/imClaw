@@ -148,7 +148,7 @@ if [[ -d "${IMCLAW_DEFAULT_DIR}/.git" ]]; then
     git checkout main || true
     git pull --rebase origin main || git reset --hard origin/main || true
   fi
-elif [[ -d "$(pwd)/.git" && -f "$(pwd)/openclaw.mjs" && -d "$(pwd)/src/imclaw" ]]; then
+elif [[ -d "$(pwd)/.git" && -f "$(pwd)/openclaw.mjs" && -d "$(pwd)/extensions/imclaw-core" ]]; then
   info "Running inside local imClaw repository ($(pwd)). Using current checkout..."
   IMCLAW_DEFAULT_DIR="$(pwd)"
 else
@@ -175,8 +175,11 @@ info "Installing dependencies with pnpm..."
 pnpm install --frozen-lockfile || pnpm install
 
 # 7. Check or build dist artifacts
-if [[ ! -f "dist/index.js" || ! -f "dist/control-ui/index.html" || "${FORCE_UPDATE}" == "1" ]]; then
-  info "Building imClaw production UI & gateway assets..."
+if [[ ! -f "dist/entry.js" || ! -f "dist/index.js" || ! -f "dist/control-ui/index.html" || "${FORCE_UPDATE}" == "1" ]]; then
+  info "Building imClaw production backend & CLI entry assets..."
+  OPENCLAW_TSDOWN_MAX_OLD_SPACE_MB=4096 pnpm build:docker || pnpm build || warn "Backend build finished with warnings, continuing..."
+  
+  info "Building imClaw production UI assets..."
   if [[ -f "scripts/ui.js" ]]; then
     node scripts/ui.js build || warn "UI build finished with warnings, continuing..."
   fi
@@ -204,6 +207,8 @@ if [[ "\${1:-}" == "update-all" ]]; then
     git checkout main && git pull origin main
   fi
   pnpm install
+  echo "Building imClaw backend and UI..."
+  OPENCLAW_TSDOWN_MAX_OLD_SPACE_MB=4096 pnpm build:docker || pnpm build || true
   if [[ -f "scripts/ui.js" ]]; then
     node scripts/ui.js build || true
   fi
