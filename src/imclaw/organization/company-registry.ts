@@ -43,6 +43,46 @@ export class CompanyRegistry {
     return Array.from(this.organization.agents.values());
   }
 
+  public registerDepartment(dept: DepartmentConfig): void {
+    this.organization.departments.set(dept.id, dept);
+  }
+
+  public updateDepartment(id: DepartmentId, patch: Partial<DepartmentConfig>): boolean {
+    const existing = this.organization.departments.get(id);
+    if (!existing) return false;
+    this.organization.departments.set(id, { ...existing, ...patch, id: existing.id });
+    return true;
+  }
+
+  public removeDepartment(id: DepartmentId): boolean {
+    return this.organization.departments.delete(id);
+  }
+
+  public registerAgent(agent: SpecialistAgent): void {
+    this.organization.agents.set(agent.id, agent);
+  }
+
+  public updateAgent(id: string, patch: Partial<SpecialistAgent>): boolean {
+    const existing = this.organization.agents.get(id);
+    if (!existing) return false;
+    this.organization.agents.set(id, { ...existing, ...patch, id: existing.id });
+    return true;
+  }
+
+  public removeAgent(id: string): boolean {
+    return this.organization.agents.delete(id);
+  }
+
+  public setAgentStatus(
+    id: string,
+    status: "IDLE" | "RUNNING" | "PAUSED" | "BLOCKED" | "COMPLETED" | "FAILED" | "OFFLINE",
+  ): boolean {
+    const existing = this.organization.agents.get(id);
+    if (!existing) return false;
+    (existing as any).status = status;
+    return true;
+  }
+
   private seedDepartments(): void {
     const depts: DepartmentConfig[] = [
       {

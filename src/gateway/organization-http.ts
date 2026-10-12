@@ -13,7 +13,7 @@ import type {
 import { TaskRouter } from "../imclaw/organization/task-router.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const OFFICE_ASSETS_DIR = path.resolve(__dirname, "../imclaw/ui/office-assets");
+const OFFICE_ASSETS_DIR = path.resolve(__dirname, "../imclaw/ui/office");
 
 const sharedRegistry = new CompanyRegistry();
 const sharedRouter = new TaskRouter(sharedRegistry);
@@ -324,7 +324,7 @@ export async function handleImclawOrganizationHttpRequest(
     (pathname === "/imclaw/office/3d" || pathname === "/imclaw/office/3d/") &&
     req.method === "GET"
   ) {
-    const commandCentrePath = path.join(OFFICE_ASSETS_DIR, "command-centre-v2.html");
+    const commandCentrePath = path.join(OFFICE_ASSETS_DIR, "imclaw-office.html");
     if (fs.existsSync(commandCentrePath)) {
       res.writeHead(200, {
         "Content-Type": "text/html; charset=utf-8",

@@ -16,11 +16,14 @@ export interface OfficeAgentDto {
   role: string;
   does: string;
   tools: string[];
+  skills: string[];
   brief: string;
   department: string;
   lead: boolean;
   interviewer: boolean;
   setUp: boolean;
+  status: "IDLE" | "RUNNING" | "PAUSED" | "BLOCKED" | "COMPLETED" | "FAILED" | "OFFLINE";
+  currentTask?: string;
 }
 
 export interface OfficeMcpConnector {
@@ -53,13 +56,17 @@ export class OfficeRuntimeService {
     this.initDefaultRoutines();
   }
 
+  public getRegistry(): CompanyRegistry {
+    return this.registry;
+  }
+
   private initDefaultRoutines(): void {
     this.routines.set("morning-brief", {
       id: "morning-brief",
       dept: "executive",
       title: "Daily Executive & Risk Briefing",
       text: "Compile overnight trading returns and department deliverables",
-      agent: "ceo",
+      agent: "elead",
       when: "every weekday at 8:00am",
       needsOk: false,
       paused: false,
@@ -70,7 +77,7 @@ export class OfficeRuntimeService {
       dept: "trading",
       title: "Hourly Liquidity & Confluence Scan",
       text: "Scan major forex and crypto pairs across SMC and trend senseis",
-      agent: "market-sensei",
+      agent: "chief-trading-shihan",
       when: "every 1 hour",
       needsOk: true,
       paused: false,
@@ -84,18 +91,16 @@ export class OfficeRuntimeService {
       id: a.id,
       name: a.name,
       role: a.role,
-      does: a.role,
-      tools: ["search", "filesystem", "database"],
-      brief: `Specialist desk handling ${a.role}`,
+      does: a.description || a.role,
+      tools: a.tools || ["search", "filesystem", "database"],
+      skills: a.skills || [],
+      brief: a.description || `Specialist desk handling ${a.role}`,
       department: a.departmentId,
-      lead:
-        a.id.includes("lead") ||
-        a.id === "ceo" ||
-        a.id === "cmo" ||
-        a.id === "cfo" ||
-        a.id === "coo",
+      lead: a.isLead || a.id.includes("lead") || a.id.includes("shihan"),
       interviewer: false,
       setUp: true,
+      status: (a as any).status || "IDLE",
+      currentTask: (a as any).currentTask,
     }));
   }
 
