@@ -246,7 +246,13 @@ if [[ "${SKIP_GATEWAY_START}" == "0" ]]; then
   else
     info "Starting imClaw Gateway in background on port ${GATEWAY_PORT}..."
     nohup "${IMCLAW_BIN_DIR}/imclaw" gateway run --port "${GATEWAY_PORT}" --allow-unconfigured --auth none --bind loopback > /tmp/imclaw-gateway.log 2>&1 &
-    sleep 3
+    # Allow background bootstrap and listener initialization to bind
+    for i in {1..8}; do
+      if curl -s -o /dev/null -w "%{http_code}" "http://127.0.0.1:${GATEWAY_PORT}/api/imclaw/version" 2>/dev/null | grep -q "200"; then
+        break
+      fi
+      sleep 1
+    done
     if curl -s -o /dev/null -w "%{http_code}" "http://127.0.0.1:${GATEWAY_PORT}/" | grep -q "200"; then
       success "imClaw Gateway launched successfully at http://127.0.0.1:${GATEWAY_PORT}"
     else
@@ -255,7 +261,7 @@ if [[ "${SKIP_GATEWAY_START}" == "0" ]]; then
   fi
 fi
 
-DISPLAY_VER="${LATEST_TAG:-v1.0.2}"
+DISPLAY_VER="${LATEST_TAG:-v1.0.3}"
 
 printf "\n${BOLD}${CYAN}================================================================${NC}\n"
 printf "${BOLD}🎉 imClaw ${DISPLAY_VER} is ready on your machine!${NC}\n"
