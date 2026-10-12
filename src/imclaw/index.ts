@@ -7,6 +7,7 @@
  */
 
 // 1. Re-export layered architectures
+export * from "./version.js";
 export * from "./platform/index.js";
 export * from "./platform/scheduling/scheduler-engine.js";
 export * from "./platform/context/context-engine.js";

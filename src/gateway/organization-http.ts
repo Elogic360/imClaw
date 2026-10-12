@@ -431,6 +431,20 @@ export async function handleImclawOrganizationHttpRequest(
     return true;
   }
 
+  // GET /api/imclaw/version
+  if (pathname === "/api/imclaw/version" && req.method === "GET") {
+    sendJson(res, 200, {
+      ok: true,
+      name: "imClaw",
+      version: "1.0.2",
+      releaseChannel: "stable",
+      codename: "Autonomous Intelligence Command Centre",
+      repo: "https://github.com/Elogic360/imClaw",
+      latestReleaseUrl: "https://github.com/Elogic360/imClaw/releases/latest",
+    });
+    return true;
+  }
+
   // GET /api/imclaw/departments
   if (pathname === "/api/imclaw/departments" && req.method === "GET") {
     const departments = sharedRegistry.getAllDepartments().map((dept: DepartmentConfig) => ({
