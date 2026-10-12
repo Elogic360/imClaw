@@ -1395,6 +1395,8 @@ importers:
         specifier: 3.4.6
         version: 3.4.6
 
+  extensions/imclaw-core: {}
+
   extensions/imessage:
     dependencies:
       typebox:
@@ -1935,6 +1937,12 @@ importers:
       '@openclaw/plugin-sdk':
         specifier: workspace:*
         version: link:../../packages/plugin-sdk
+
+  extensions/openwa:
+    dependencies:
+      '@modelcontextprotocol/sdk':
+        specifier: ^1.18.1
+        version: 1.31.0(supports-color@10.2.2)(zod@4.6.5)
 
   extensions/parallel:
     devDependencies:
